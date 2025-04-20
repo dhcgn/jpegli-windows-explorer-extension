@@ -8,6 +8,12 @@ $COMMIT = git rev-parse --short HEAD
 Write-Host 'Running tests...'
 go test -v ./...
 
+# Delete old executable if it exists
+if (Test-Path 'jpegli-windows-explorer-extension.exe') {
+    Write-Host 'Deleting old executable...'
+    Remove-Item 'jpegli-windows-explorer-extension.exe'
+}
+
 # Build with ldflags
 Write-Host 'Building executable...'
 go build -o jpegli-windows-explorer-extension.exe -ldflags "-X 'main.Version=$VERSION' -X 'main.Build=$BUILD' -X 'main.Commit=$COMMIT'" .\main.go
