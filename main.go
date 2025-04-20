@@ -9,6 +9,7 @@ import (
 	"github.com/dhcgn/jpegli-windows-explorer-extension/convert"
 	"github.com/dhcgn/jpegli-windows-explorer-extension/filehandling"
 	"github.com/dhcgn/jpegli-windows-explorer-extension/install"
+	"github.com/dhcgn/jpegli-windows-explorer-extension/settings"
 	"github.com/dhcgn/jpegli-windows-explorer-extension/types"
 	"github.com/pterm/pterm"
 )
@@ -50,7 +51,12 @@ func main() {
 		return
 	}
 
-	opts := loadConvertOptions()
+	opts, err := settings.LoadOrDefault()
+	if err != nil {
+		pterm.Warning.Printfln("Error loading settings, using defaults: %s", err)
+		waitForAnyKey()
+		return
+	}
 	showSettings(tools, opts)
 
 	files := getFilesOrExit(opts, tools)
@@ -220,9 +226,4 @@ func boolToText(b bool) string {
 		return pterm.Green("Yes")
 	}
 	return pterm.Red("No")
-}
-
-func loadConvertOptions() convert.ConvertOptions {
-	// In the future, load from disk as JSON
-	return convert.ConvertOptions{Distance: 0.5}
 }

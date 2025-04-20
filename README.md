@@ -81,6 +81,26 @@ For those who prefer command-line operations, the included PowerShell script `co
 
 The project is compiled and ready to run, with the executable available at bin/Debug/net9.0-windows/jpegli-windows-gui.exe.
 
+## Configuration
+
+The application supports configuration via a YAML file located at:
+
+```
+C:\Users\%USER%\AppData\Local\jpegli-windows-explorer-extension\config.yaml
+```
+
+If the file does not exist, the application will automatically create it with default settings the first time it runs.
+
+### Sample config.yaml
+
+```yaml
+distance: 0.5
+```
+
+- `distance`: Controls the jpegli quality setting. Lower values mean higher quality (recommended range: 0.5–3.0, where 1.0 is visually lossless).
+
+You can edit this file to adjust the optimization settings to your preference.
+
 ## Uninstallation
 
 To completely remove the JPEGLI Optimizer integration and its data from your system, follow these steps:
