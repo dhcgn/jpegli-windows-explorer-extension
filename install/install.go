@@ -3,7 +3,6 @@ package install
 import (
 	"archive/zip"
 	"embed"
-	_ "embed"
 	"fmt"
 	"io"
 	"os"

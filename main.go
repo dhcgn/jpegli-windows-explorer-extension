@@ -37,7 +37,11 @@ func main() {
 		} else {
 			pterm.Println("You chose not to install.")
 		}
-		pterm.Println("Exiting...")
+
+		// Wait for the user to press any key,
+		fmt.Println("Press any key to continue...")
+		var input [1]byte
+		os.Stdin.Read(input[:])
 		return
 	}
 

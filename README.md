@@ -1,6 +1,8 @@
 # JPEG Optimizer for Windows with jpegli
 
-This is a Windows WPF desktop application designed to optimize JPEG image files using the jpegli optimizer.
+> ⚠️⚠️⚠️ Very early version under active development ⚠️⚠️⚠️
+
+This is a command-line application written in Go for optimizing JPEG image files using the jpegli optimizer. When run without arguments, it installs itself as a Windows Explorer context menu entry, allowing you to optimize JPEGs directly from the right-click menu on files or folders.
 
 ## About jpegli
 
@@ -17,70 +19,55 @@ Key features of jpegli include:
 
 For more information, see: [Introducing Jpegli: A New JPEG Coding Library](https://opensource.googleblog.com/2024/04/introducing-jpegli-new-jpeg-coding-library.html)
 
+## Screenshots
+
+### Demo
+
+![Screenshot of cli on executing on folder](docs/folder-execute.png)
+
+![Screenshot of explorer after executing on folder](docs/folder-result.png)
+
+### Installation
+
+![Screenshot of explorer after executing on folder](docs/install.png)
+
 ## Purpose
 
-The application provides a simple graphical user interface where users can drag and drop JPEG files or folders to optimize them using the jpegli optimizer, while preserving image metadata through exiftool.
+This CLI application provides a simple way to optimize JPEG files or entire folders using the jpegli optimizer, while preserving image metadata through exiftool. The application can be invoked directly from the command line or via the Windows Explorer context menu after installation.
 
 ## Key Features
 
-1. **Drag and Drop Interface**
-   - Users can drag and drop individual JPEG files or entire folders
-   - The app automatically scans folders recursively for all JPEG files
+1. **Context Menu Integration**
+   - When run without arguments, the app installs itself as a Windows Explorer context menu entry for both files and folders.
+   - After installation, you can right-click any file or folder to optimize JPEGs using the context menu.
 
-2. **Optimization Settings**
-   - **Distance (Quality)**: A slider control that adjusts the optimization level from 0.0 to 3.0 (default: 1.0)
-     - Higher values produce smaller files but potentially lower quality
-   - **Overwrite Files**: Toggle option to either overwrite original files or save optimized versions with a ".jpegli.jpg" extension
+2. **Drag and Drop & CLI Usage**
+   - You can run the app from the command line, passing a file or folder as an argument to optimize JPEGs.
 
-3. **Processing Capabilities**
-   - Processes images asynchronously to keep the UI responsive
-   - Uses jpegli.exe for image optimization
-   - Uses exiftool.exe to preserve metadata from the original images
-   - Displays real-time progress and statistics
+3. **Optimization Settings**
+   - Uses a default distance (quality) setting for jpegli, which can be adjusted in the code.
+   - Preserves metadata using exiftool.
 
-4. **Feedback & Progress Tracking**
-   - Log area showing detailed processing information for each file
-   - Status bar displaying overall progress
-   - File size savings calculation (both in bytes and percentage)
+4. **Embedded Tools**
+   - Both jpegli.exe and exiftool.exe are embedded within the application and extracted as needed. No manual download is required.
 
-## Technical Implementation
-
-- Built using .NET (targeting net9.0-windows)
-- WPF (Windows Presentation Foundation) UI framework
-- Asynchronous processing using Tasks
-- External tool integration (jpegli and exiftool)
-- File system operations for managing optimized files
+5. **Processing Capabilities**
+   - Processes images asynchronously to keep the UI responsive (if used in a GUI context).
+   - Displays real-time progress and statistics in the CLI.
 
 ## Example Workflow
 
-Here's a practical example of how to use this tool in a photography workflow:
-
-1. Export images from Lightroom or Capture One with JPEG 100% Quality
-2. Move these files or the entire folder to this application
-3. Process them with the recommended quality setting of 0.5 (distance)
-   - Distance of 0.5 is for the highest quality
-   - Distance of 1.0 is considered visually lossless
-   - Recommended range: 0.5 to 3.0
-   - Allowed range: 0.0 to 25.0
-   - Lower values maintain higher quality while still achieving good compression
-
-In a real-world example, processing 35 files (45 MP each) with a distance setting of 0.5 reduced the total size from 918.09 MB to 273.85 MB - achieving a compression ratio of 0.3 (70% size reduction) while maintaining visual quality.
-
-## Usage Flow
-
-1. User adjusts optimization settings (distance slider and overwrite option)
-2. User drags and drops JPEG files or folders onto the application
-3. The application processes each image with the selected settings
-4. Progress and results are displayed in real-time
-5. Optimized files are saved according to user preferences
+- Run the executable without arguments to install the context menu integration.
+- Right-click a file or folder in Windows Explorer and select the optimization option.
+- Or, run the executable from the command line with a file or folder as an argument to optimize JPEGs.
 
 ## Dependencies
 
-The application requires:
+The application embeds:
 - jpegli.exe - The core optimization engine
 - exiftool.exe - For preserving image metadata
 
-These tools should be placed in a "tools" folder in the application's directory.
+No manual setup of these tools is required.
 
 For those who prefer command-line operations, the included PowerShell script `convert_with_jpegli.ps1` demonstrates how to perform the same optimization using a script with these executables directly.
 
