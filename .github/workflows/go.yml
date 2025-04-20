@@ -7,18 +7,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Go '1.x' 
         uses: actions/setup-go@v5
         with:
           go-version: '1.x' 
+          
       - name: Display Go version
         run: go version
+
       - name: Install dependencies
         run: go get .
+
       - name: Build Windows executable
         env:
           GOOS: windows
           GOARCH: amd64
         run: go build -v -o jpegli-windows-explorer-extention.exe main.go
+
       - name: Test
         run: go test -v ./...
+
+      - name: Upload Windows executable as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpegli-windows-explorer-extention
+          path: jpegli-windows-explorer-extention.exe
