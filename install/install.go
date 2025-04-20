@@ -282,8 +282,7 @@ func CopyExecutableToProgramData() string {
 		return ""
 	}
 	// Get the filename from the executable path
-	_, fileName := filepath.Split(exePath)
-	targetPath := filepath.Join(targetDir, fileName)
+	targetPath := filepath.Join(targetDir, "jpegli-windows-explorer-extention.exe")
 
 	// Always copy the executable to the target directory
 	sourceFile, err := os.Open(exePath)

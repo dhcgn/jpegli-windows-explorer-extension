@@ -68,7 +68,9 @@ func main() {
 		return
 	}
 
-	opts := convert.ConvertOptions{}
+	opts := convert.ConvertOptions{
+		Distance: 0.5,
+	}
 	states := []convert.ConvertStats{}
 
 	if !isDir {
