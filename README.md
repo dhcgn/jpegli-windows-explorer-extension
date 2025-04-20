@@ -63,6 +63,12 @@ This CLI application provides a simple way to optimize JPEG files or entire fold
 - Right-click a file or folder in Windows Explorer and select the optimization option.
 - Or, run the executable from the command line with a file or folder as an argument to optimize JPEGs.
 
+## Recommended Usage
+
+For best results, export your images from Lightroom, Capture One, or other photo applications using JPEG format with quality set to 100%. Then, use this CLI tool to optimize the exported JPEGs. While the tool also supports other file formats (such as PNG, GIF, JXL, etc.), metadata preservation is most reliable and fully supported for JPEG files.
+
+This workflow ensures you retain the highest image quality and complete metadata when optimizing your photos.
+
 ## Dependencies
 
 The application embeds:
@@ -74,3 +80,32 @@ No manual setup of these tools is required.
 For those who prefer command-line operations, the included PowerShell script `convert_with_jpegli.ps1` demonstrates how to perform the same optimization using a script with these executables directly.
 
 The project is compiled and ready to run, with the executable available at bin/Debug/net9.0-windows/jpegli-windows-gui.exe.
+
+## Uninstallation
+
+To completely remove the JPEGLI Optimizer integration and its data from your system, follow these steps:
+
+1. **Run the provided PowerShell script**
+
+   The repository includes a script at `_scripts/deinstall.ps1` that will:
+   - Remove the Windows Explorer context menu entries for both files and folders.
+   - Delete the application's data folder from your user profile (`%LocalAppData%\jpegli-windows-explorer-extension`).
+
+2. **How to run the script**
+
+   Open a PowerShell window and execute:
+
+   ```powershell
+   & "<path-to-repo>\_scripts\deinstall.ps1"
+   ```
+   Replace `<path-to-repo>` with the actual path to your cloned repository.
+
+3. **What the script does**
+
+   - Removes registry keys:
+     - `HKCU:\SOFTWARE\Classes\*\shell\JPEGLIOptimizer`
+     - `HKCU:\SOFTWARE\Classes\Directory\shell\JPEGLIOptimizer`
+   - Deletes the app data folder:
+     - `%LocalAppData%\jpegli-windows-explorer-extension`
+
+After running the script, the app and its Explorer integration will be fully removed from your system.
