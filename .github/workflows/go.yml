@@ -19,11 +19,22 @@ jobs:
       - name: Install dependencies
         run: go get .
 
+      - name: Set build variables
+        id: vars
+        run: |
+          echo "VERSION=$(git describe --tags --always --dirty || echo 'dev')" >> $GITHUB_ENV
+          echo "BUILD=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
+          echo "COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Build Windows executable
         env:
           GOOS: windows
           GOARCH: amd64
-        run: go build -v -o jpegli-windows-explorer-extension.exe main.go
+          VERSION: ${{ env.VERSION }}
+          BUILD: ${{ env.BUILD }}
+          COMMIT: ${{ env.COMMIT }}
+        run: |
+          go build -v -o jpegli-windows-explorer-extension.exe -ldflags "-X 'main.Version=${VERSION}' -X 'main.Build=${BUILD}' -X 'main.Commit=${COMMIT}'" main.go
 
       - name: Test
         run: go test -v ./...
