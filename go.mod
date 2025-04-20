@@ -1,4 +1,4 @@
-module github.com/dhcgn/jpegli-windows-explorer-extention
+module github.com/dhcgn/jpegli-windows-explorer-extension
 
 go 1.23.4
 

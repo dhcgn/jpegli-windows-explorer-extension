@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dhcgn/jpegli-windows-explorer-extention/types"
+	"github.com/dhcgn/jpegli-windows-explorer-extension/types"
 )
 
 // Embedded zip files
@@ -68,7 +68,7 @@ func getAppFolder() string {
 		return ""
 	}
 	// Create the target directory if it doesn't exist
-	targetDir := filepath.Join(cacheDir, "jpegli-windows-explorer-extention")
+	targetDir := filepath.Join(cacheDir, "jpegli-windows-explorer-extension")
 	return targetDir
 }
 
@@ -262,7 +262,7 @@ func extractZipFile(zipPath, destPath string) error {
 }
 
 // CopyExecutableToProgramData moves the executable to the Program Data directory
-// Folder: os.UserCacheDir() + jpegli-windows-explorer-extention
+// Folder: os.UserCacheDir() + jpegli-windows-explorer-extension
 // Return the path to the executable in the Program Data directory
 func CopyExecutableToProgramData() string {
 	// Get the current executable path
@@ -280,7 +280,7 @@ func CopyExecutableToProgramData() string {
 		return ""
 	}
 	// Get the filename from the executable path
-	targetPath := filepath.Join(targetDir, "jpegli-windows-explorer-extention.exe")
+	targetPath := filepath.Join(targetDir, "jpegli-windows-explorer-extension.exe")
 
 	// Always copy the executable to the target directory
 	sourceFile, err := os.Open(exePath)

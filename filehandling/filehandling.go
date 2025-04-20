@@ -1,6 +1,7 @@
 package filehandling
 
 import (
+	"fmt"
 	"os"
 )
 
@@ -15,7 +16,7 @@ func IsPathDir(path string) (bool, error) {
 	return false, nil
 }
 
-func GetAllFilesRecursiveInDirectory(filter func(string) bool, path string) ([]string, error) {
+func GetAllFilesInDirectory(filter func(string) bool, path string, warn func(string)) ([]string, error) {
 	var allFiles []string
 
 	isDir, err := IsPathDir(path)
@@ -44,12 +45,7 @@ func GetAllFilesRecursiveInDirectory(filter func(string) bool, path string) ([]s
 		fullPath := path + string(os.PathSeparator) + entry.Name()
 
 		if entry.IsDir() {
-			// If it's a directory, make a recursive call
-			subFiles, err := GetAllFilesRecursiveInDirectory(filter, fullPath)
-			if err != nil {
-				return nil, err
-			}
-			files = append(files, subFiles...)
+			warn(fmt.Sprintf("Skipping is directory: %s", fullPath))
 		} else {
 			// If it's a file, check if it passes the filter
 			if filter == nil || filter(fullPath) {

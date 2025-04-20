@@ -6,14 +6,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dhcgn/jpegli-windows-explorer-extention/convert"
-	"github.com/dhcgn/jpegli-windows-explorer-extention/filehandling"
-	"github.com/dhcgn/jpegli-windows-explorer-extention/install"
+	"github.com/dhcgn/jpegli-windows-explorer-extension/convert"
+	"github.com/dhcgn/jpegli-windows-explorer-extension/filehandling"
+	"github.com/dhcgn/jpegli-windows-explorer-extension/install"
 	"github.com/pterm/pterm"
 )
 
 const (
-	AppName = "jpegli-windows-explorer-extention"
+	AppName = "jpegli-windows-explorer-extension"
 )
 
 var (
@@ -22,8 +22,14 @@ var (
 	Commit  = "UNSET"
 )
 
+func waitForAnyKey() {
+	fmt.Println("Press any key to continue...")
+	var input [1]byte
+	os.Stdin.Read(input[:])
+}
+
 func main() {
-	fmt.Println("jpegli-windows-explorer-extention")
+	fmt.Println("jpegli-windows-explorer-extension")
 	fmt.Printf("Version: %s, Build: %s, Commit: %s\n", Version, Build, Commit)
 
 	if len(os.Args) == 1 {
@@ -37,11 +43,7 @@ func main() {
 		} else {
 			pterm.Println("You chose not to install.")
 		}
-
-		// Wait for the user to press any key,
-		fmt.Println("Press any key to continue...")
-		var input [1]byte
-		os.Stdin.Read(input[:])
+		waitForAnyKey()
 		return
 	}
 
@@ -53,6 +55,7 @@ func main() {
 	// For the moment we only support one file/folder at a time
 	if len(os.Args) > 2 {
 		pterm.Error.Printfln("Only one file or folder is supported at the moment.")
+		waitForAnyKey()
 		return
 	}
 
@@ -60,6 +63,7 @@ func main() {
 	tools, err := install.GetToolsPath()
 	if err != nil {
 		pterm.Error.Printfln("Error getting tools path: %s", err)
+		waitForAnyKey()
 		return
 	}
 
@@ -74,24 +78,37 @@ func main() {
 
 	pterm.DefaultHeader.Println("Converting")
 	// Get only JPEG files
-	files, err := filehandling.GetAllFilesRecursiveInDirectory(
-		func(path string) bool {
-			return strings.HasSuffix(strings.ToLower(path), ".jpg") ||
-				strings.HasSuffix(strings.ToLower(path), ".jpeg")
-		}, os.Args[1])
+
+	warn := func(msg string) {
+		pterm.Warning.Printfln(msg)
+	}
+	filter := func(path string) bool {
+		ext := strings.ToLower(filepath.Ext(path))
+		switch ext {
+		case ".jpg", ".jpeg", ".jxl", ".ppm", ".pnm", ".pfm", ".pam", ".pgx", ".png", ".apng", ".gif":
+			return true
+		default:
+			return false
+		}
+	}
+
+	files, err := filehandling.GetAllFilesInDirectory(filter, os.Args[1], warn)
 
 	if err != nil {
 		pterm.Error.Printfln("Error getting files: %s", err)
+		waitForAnyKey()
 		return
 	}
 	if len(files) == 0 {
 		pterm.Error.Printfln("No JPEG files found in the specified path.")
+		waitForAnyKey()
 		return
 	}
 
 	isDir, err := filehandling.IsPathDir(os.Args[1])
 	if err != nil {
 		pterm.Error.Printfln("Error checking if path is a directory: %s", err)
+		waitForAnyKey()
 		return
 	}
 
@@ -101,6 +118,7 @@ func main() {
 		stat, err := convert.Convert(tools, opts, files[0], files[0]+".jpegli.jpg")
 		if err != nil {
 			pterm.Error.Printfln("Error converting file: %s", err)
+			waitForAnyKey()
 			return
 		}
 		states = append(states, stat)
@@ -110,6 +128,7 @@ func main() {
 		err := os.MkdirAll(targetFolder, os.ModePerm)
 		if err != nil {
 			pterm.Error.Printfln("Error creating target folder: %s", err)
+			waitForAnyKey()
 			return
 		}
 		p, _ := pterm.DefaultProgressbar.WithTotal(len(files)).WithTitle("Converting files").Start()
@@ -119,6 +138,7 @@ func main() {
 			stat, err := convert.Convert(tools, opts, file, targetFilePath)
 			if err != nil {
 				pterm.Error.Printfln("Error converting file: %s", err)
+				waitForAnyKey()
 				return
 			} else {
 				states = append(states, stat)
@@ -148,10 +168,7 @@ func main() {
 	pterm.Info.Printfln("Average compression ratio: %.2f%%",
 		(1-float64(totalTargetSize)/float64(totalSourceSize))*100)
 
-	// Wait for the user to press any key,
-	fmt.Println("Press any key to continue...")
-	var input [1]byte
-	os.Stdin.Read(input[:])
+	waitForAnyKey()
 }
 
 func boolToText(b bool) string {

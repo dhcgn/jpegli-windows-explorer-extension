@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/dhcgn/jpegli-windows-explorer-extention/types"
+	"github.com/dhcgn/jpegli-windows-explorer-extension/types"
 )
 
 type ConvertOptions struct {
