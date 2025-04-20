@@ -74,7 +74,7 @@ func main() {
 	pterm.DefaultHeader.Println("Settings")
 	pterm.Info.Printfln("Exiftool path:   %s", tools.Exiftool)
 	pterm.Info.Printfln("cjpegli path:    %s", tools.Cjpegli)
-	pterm.Info.Printfln("Jpegli Distance: %.2f (recommended 0.5-3.0)", opts.Distance)
+	pterm.Info.Printfln("Jpegli Distance: %.2f (recommended 0.5-3.0, 1.0 = visually lossless, lower better)", opts.Distance)
 
 	pterm.DefaultHeader.Println("Converting")
 	// Get only JPEG files
