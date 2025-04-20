@@ -165,7 +165,11 @@ func checkIsDirOrExit() *bool {
 func convertFilesOrExit(files []string, isDir bool, tools *types.ExecutablePaths, opts convert.ConvertOptions) []convert.ConvertStats {
 	states := []convert.ConvertStats{}
 	if !isDir {
-		stat, err := convert.Convert(*tools, opts, files[0], files[0]+".jpegli.jpg")
+		baseName := filepath.Base(files[0])
+		ext := filepath.Ext(baseName)
+		targetName := strings.TrimSuffix(baseName, ext) + ".jpegli.jpg"
+		targetPath := filepath.Join(filepath.Dir(files[0]), targetName)
+		stat, err := convert.Convert(*tools, opts, files[0], targetPath)
 		if err != nil {
 			pterm.Error.Printfln("Error converting file: %s", err)
 			return nil
