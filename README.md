@@ -4,7 +4,13 @@
 
 > ⚠️⚠️⚠️ Very early version under active development ⚠️⚠️⚠️
 
-This is a command-line application written in Go for optimizing JPEG image files using the jpegli optimizer. When run without arguments, it installs itself as a Windows Explorer context menu entry, allowing you to optimize JPEGs directly from the right-click menu on files or folders.
+This is a command-line application written in Go for optimizing JPEG image files using the jpegli optimizer. 
+
+**How to Use:**
+- **No arguments:** Run the executable without any arguments to install itself as a Windows Explorer context menu entry. This lets you optimize JPEGs directly from the right-click menu on files or folders.
+- **One argument:** Run the executable with a single argument (either a file or a folder) to optimize JPEGs in that location immediately.
+
+This simple interface makes it easy to use the tool directly, automate it in scripts, or integrate it into other applications.
 
 ## About jpegli
 
