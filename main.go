@@ -100,7 +100,8 @@ func main() {
 		return
 	}
 	if len(files) == 0 {
-		pterm.Error.Printfln("No JPEG files found in the specified path.")
+		pterm.Error.Printfln("No compatible image files found in the specified path.")
+		pterm.Info.Printfln("Compatible formats: .jpg, .jpeg, .jxl, .ppm, .pnm, .pfm, .pam, .pgx, .png, .apng, .gif")
 		waitForAnyKey()
 		return
 	}
@@ -134,7 +135,12 @@ func main() {
 		p, _ := pterm.DefaultProgressbar.WithTotal(len(files)).WithTitle("Converting files").Start()
 		for _, file := range files {
 			p.UpdateTitle(fmt.Sprintf("Converting %s", file))
-			targetFilePath := targetFolder + string(os.PathSeparator) + filepath.Base(file)
+			baseName := filepath.Base(file)
+			ext := strings.ToLower(filepath.Ext(baseName))
+			if ext != ".jpg" && ext != ".jpeg" {
+				baseName = strings.TrimSuffix(baseName, ext) + ".jpg"
+			}
+			targetFilePath := targetFolder + string(os.PathSeparator) + baseName
 			stat, err := convert.Convert(tools, opts, file, targetFilePath)
 			if err != nil {
 				pterm.Error.Printfln("Error converting file: %s", err)
