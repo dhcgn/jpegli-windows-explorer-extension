@@ -1,3 +1,5 @@
+[![Go](https://github.com/dhcgn/jpegli-windows-explorer-extension/actions/workflows/go.yml/badge.svg)](https://github.com/dhcgn/jpegli-windows-explorer-extension/actions/workflows/go.yml)
+
 # JPEG Optimizer for Windows with jpegli
 
 > ⚠️⚠️⚠️ Very early version under active development ⚠️⚠️⚠️
