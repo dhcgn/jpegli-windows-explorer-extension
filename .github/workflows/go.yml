@@ -19,6 +19,6 @@ jobs:
         env:
           GOOS: windows
           GOARCH: amd64
-        run: go build -v -o jpegli-windows-explorer-extention.exe ./...
+        run: go build -v -o jpegli-windows-explorer-extention.exe main.go
       - name: Test
         run: go test -v ./...
