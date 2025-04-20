@@ -12,7 +12,20 @@ import (
 	"github.com/pterm/pterm"
 )
 
+const (
+	AppName = "jpegli-windows-explorer-extention"
+)
+
+var (
+	Version = "UNSET"
+	Build   = "UNSET"
+	Commit  = "UNSET"
+)
+
 func main() {
+	fmt.Println("jpegli-windows-explorer-extention")
+	fmt.Printf("Version: %s, Build: %s, Commit: %s\n", Version, Build, Commit)
+
 	if len(os.Args) == 1 {
 		pterm.Println("No arguments provided. Want to install and set context menu?")
 		result, _ := pterm.DefaultInteractiveConfirm.Show()
@@ -46,6 +59,16 @@ func main() {
 		return
 	}
 
+	opts := convert.ConvertOptions{
+		Distance: 0.5,
+	}
+
+	pterm.DefaultHeader.Println("Settings")
+	pterm.Info.Printfln("Exiftool path:   %s", tools.Exiftool)
+	pterm.Info.Printfln("cjpegli path:    %s", tools.Cjpegli)
+	pterm.Info.Printfln("Jpegli Distance: %.2f (recommended 0.5-3.0)", opts.Distance)
+
+	pterm.DefaultHeader.Println("Converting")
 	// Get only JPEG files
 	files, err := filehandling.GetAllFilesRecursiveInDirectory(
 		func(path string) bool {
@@ -68,9 +91,6 @@ func main() {
 		return
 	}
 
-	opts := convert.ConvertOptions{
-		Distance: 0.5,
-	}
 	states := []convert.ConvertStats{}
 
 	if !isDir {
@@ -105,6 +125,8 @@ func main() {
 		p.Stop()
 		pterm.Info.Printfln("Converted %d files to %s", len(files), targetFolder)
 	}
+
+	pterm.DefaultHeader.Println("Finished")
 
 	// Print the conversion statistics
 	var totalSourceSize int64
