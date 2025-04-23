@@ -53,20 +53,16 @@ This CLI application provides a simple way to optimize JPEG files or entire fold
    - You can run the app from the command line, passing a file or folder as an argument to optimize JPEGs.
 
 3. **Optimization Settings**
-   - Uses a default distance (quality) setting for jpegli, which can be adjusted in the code.
+   - Uses a default distance (quality) setting for jpegli, which can be adjusted in the config file.
    - Preserves metadata using exiftool.
 
 4. **Embedded Tools**
    - Both jpegli.exe and exiftool.exe are embedded within the application and extracted as needed. No manual download is required.
 
-5. **Processing Capabilities**
-   - Processes images asynchronously to keep the UI responsive (if used in a GUI context).
-   - Displays real-time progress and statistics in the CLI.
-
 ## Example Workflow
 
 - Run the executable without arguments to install the context menu integration.
-- Right-click a file or folder in Windows Explorer and select the optimization option.
+- Right-click a file or folder in Windows Explorer and select "Optimize JPEGs with JPEGLI".
 - Or, run the executable from the command line with a file or folder as an argument to optimize JPEGs.
 
 ## Recommended Usage
@@ -78,26 +74,40 @@ This workflow ensures you retain the highest image quality and complete metadata
 ## Dependencies
 
 The application embeds:
-- jpegli.exe - The core optimization engine
+- jpegli.exe - The core optimization engine provided by Google jpegli-Project https://github.com/google/jpegli.
 - exiftool.exe - For preserving image metadata
 
 No manual setup of these tools is required.
 
-For those who prefer command-line operations, the included PowerShell script `convert_with_jpegli.ps1` demonstrates how to perform the same optimization using a script with these executables directly.
-
-The project is compiled and ready to run, with the executable available at bin/Debug/net9.0-windows/jpegli-windows-gui.exe.
+For those who prefer scripting, the included PowerShell script `convert_with_jpegli.ps1` demonstrates how to perform the same optimization using a script with these executables directly.
 
 ## Configuration
 
 The application supports configuration via a YAML file located at:
 
+If the file does not exist, the application will automatically create it with default settings the first time it runs.
+
 ```
 C:\Users\%USER%\AppData\Local\jpegli-windows-explorer-extension\config.yaml
 ```
 
-If the file does not exist, the application will automatically create it with default settings the first time it runs.
+### Open with Notepad with PowerShell or CMD command
+
+#### PowerShell
+
+```powershell
+C:\Users\%USER%\AppData\Local\jpegli-windows-explorer-extension\config.yaml
+```
+
+#### CMD
+
+```cmd
+notepad "%LOCALAPPDATA%\jpegli-windows-explorer-extension\config.yaml"
+```
 
 ### Sample config.yaml
+
+The default settings are set to ensure high quality!
 
 ```yaml
 distance: 0.5
@@ -106,6 +116,12 @@ distance: 0.5
 - `distance`: Controls the jpegli quality setting. Lower values mean higher quality (recommended range: 0.5–3.0, where 1.0 is visually lossless).
 
 You can edit this file to adjust the optimization settings to your preference.
+
+## Controll Quality
+
+I recommend using https://www.scootersoftware.com/ to compare the original and optimized images. This tool allows you to view the images side by side and adjust the tolerance to see the differences clearly.
+
+![Compare with Beyond Compare](docs/bc_compare.png)
 
 ## Uninstallation
 
