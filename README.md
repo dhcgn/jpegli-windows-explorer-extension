@@ -39,6 +39,20 @@ For more information, see: [Introducing Jpegli: A New JPEG Coding Library](https
 
 ![Screenshot of explorer after executing on folder](docs/install.png)
 
+## How to Integrate with Lightroom
+
+You can use the JPEG Optimizer directly in your Lightroom export workflow:
+
+1. In Lightroom, open the **Export** dialog.
+2. Scroll down to the **Post-Processing** section.
+3. In the **After Export** dropdown, select **Open in Other Application**.
+4. Click **Choose** and select the JPEG Optimizer executable.
+5. Export your images as usual. After export, the optimizer will run automatically on your exported files.
+
+![Lightroom Export Dialog showing integration](docs/lightroom-plugin.png)
+
+This allows you to seamlessly optimize your JPEGs as part of your regular Lightroom export process.
+
 ## Purpose
 
 This CLI application provides a simple way to optimize JPEG files or entire folders using the jpegli optimizer, while preserving image metadata through exiftool. The application can be invoked directly from the command line or via the Windows Explorer context menu after installation.
