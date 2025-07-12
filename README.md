@@ -96,7 +96,7 @@ C:\Users\%USER%\AppData\Local\jpegli-windows-explorer-extension\config.yaml
 #### PowerShell
 
 ```powershell
-C:\Users\%USER%\AppData\Local\jpegli-windows-explorer-extension\config.yaml
+start "C:\Users\${env:USERNAME}\AppData\Local\jpegli-windows-explorer-extension\config.yaml"
 ```
 
 #### CMD
