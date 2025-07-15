@@ -39,12 +39,6 @@ func main() {
 		return
 	}
 
-	printArgs()
-	if !checkSingleInput() {
-		waitForAnyKey()
-		return
-	}
-
 	tools := getToolsOrExit()
 	if tools == nil {
 		waitForAnyKey()
@@ -59,14 +53,22 @@ func main() {
 	}
 	showSettings(tools, opts)
 
-	files := getFilesOrExit(opts, tools)
-	if files == nil {
+	printArgs()
+	filesOrDirs := os.Args[1:]
+
+	isDir, err := checkIsDirOrExit(filesOrDirs)
+	if err != nil {
+		pterm.Error.Printfln("Error checking if path is a directory: %s", err)
+		waitForAnyKey()
+		return
+	}
+	if isDir == nil {
 		waitForAnyKey()
 		return
 	}
 
-	isDir := checkIsDirOrExit()
-	if isDir == nil {
+	files := getFilesOrExit(filesOrDirs)
+	if files == nil {
 		waitForAnyKey()
 		return
 	}
@@ -104,14 +106,6 @@ func printArgs() {
 	}
 }
 
-func checkSingleInput() bool {
-	if len(os.Args) > 2 {
-		pterm.Error.Printfln("Only one file or folder is supported at the moment.")
-		return false
-	}
-	return true
-}
-
 func getToolsOrExit() *types.ExecutablePaths {
 	tools, err := install.GetToolsPath()
 	if err != nil {
@@ -129,7 +123,7 @@ func showSettings(tools *types.ExecutablePaths, opts convert.ConvertOptions) {
 	pterm.DefaultHeader.Println("Converting")
 }
 
-func getFilesOrExit(opts convert.ConvertOptions, tools *types.ExecutablePaths) []string {
+func getFilesOrExit(filesOrDirs []string) []string {
 	warn := func(msg string) { pterm.Warning.Printfln(msg) }
 	filter := func(path string) bool {
 		ext := strings.ToLower(filepath.Ext(path))
@@ -140,11 +134,17 @@ func getFilesOrExit(opts convert.ConvertOptions, tools *types.ExecutablePaths) [
 			return false
 		}
 	}
-	files, err := filehandling.GetAllFilesInDirectory(filter, os.Args[1], warn)
-	if err != nil {
-		pterm.Error.Printfln("Error getting files: %s", err)
-		return nil
+
+	var files []string
+	for _, path := range filesOrDirs {
+		moreFiles, err := filehandling.GetAllFilesInDirectory(filter, path, warn)
+		if err != nil {
+			pterm.Error.Printfln("Error getting files: %s", err)
+			return nil
+		}
+		files = append(files, moreFiles...)
 	}
+
 	if len(files) == 0 {
 		pterm.Error.Printfln("No compatible image files found in the specified path.")
 		pterm.Info.Printfln("Compatible formats: .jpg, .jpeg, .jxl, .ppm, .pnm, .pfm, .pam, .pgx, .png, .apng, .gif")
@@ -153,29 +153,61 @@ func getFilesOrExit(opts convert.ConvertOptions, tools *types.ExecutablePaths) [
 	return files
 }
 
-func checkIsDirOrExit() *bool {
-	isDir, err := filehandling.IsPathDir(os.Args[1])
-	if err != nil {
-		pterm.Error.Printfln("Error checking if path is a directory: %s", err)
-		return nil
+func checkIsDirOrExit(filesOrDirs []string) (*bool, error) {
+	if len(filesOrDirs) == 0 {
+		return nil, fmt.Errorf("no files or directories provided")
 	}
-	return &isDir
+
+	// If one element and it's a directory, return true
+	if len(filesOrDirs) == 1 {
+		isDir, err := filehandling.IsPathDir(filesOrDirs[0])
+		if err != nil {
+			return nil, err
+		}
+		if isDir {
+			result := true
+			return &result, nil
+		}
+	}
+
+	// Check if all elements are files
+	allFiles := true
+	for _, path := range filesOrDirs {
+		isDir, err := filehandling.IsPathDir(path)
+		if err != nil {
+			return nil, err
+		}
+		if isDir {
+			allFiles = false
+			break
+		}
+	}
+
+	if allFiles {
+		result := false
+		return &result, nil
+	}
+
+	// All other cases return error
+	return nil, fmt.Errorf("invalid combination: must be either a single directory or multiple files only")
 }
 
 func convertFilesOrExit(files []string, isDir bool, tools *types.ExecutablePaths, opts convert.ConvertOptions) []convert.ConvertStats {
 	states := []convert.ConvertStats{}
 	if !isDir {
-		baseName := filepath.Base(files[0])
-		ext := filepath.Ext(baseName)
-		targetName := strings.TrimSuffix(baseName, ext) + ".jpegli.jpg"
-		targetPath := filepath.Join(filepath.Dir(files[0]), targetName)
-		stat, err := convert.Convert(*tools, opts, files[0], targetPath)
-		if err != nil {
-			pterm.Error.Printfln("Error converting file: %s", err)
-			return nil
+		for _, file := range files {
+			baseName := filepath.Base(file)
+			ext := filepath.Ext(baseName)
+			targetName := strings.TrimSuffix(baseName, ext) + ".jpegli.jpg"
+			targetPath := filepath.Join(filepath.Dir(file), targetName)
+			stat, err := convert.Convert(*tools, opts, file, targetPath)
+			if err != nil {
+				pterm.Error.Printfln("Error converting file: %s", err)
+				return nil
+			}
+			states = append(states, stat)
+			pterm.Info.Printfln("Converted file: %s with ratio %.2f", file, stat.FileSizeRatio)
 		}
-		states = append(states, stat)
-		pterm.Info.Printfln("Converted file: %s with ratio %.2f", files[0], stat.FileSizeRatio)
 	} else {
 		targetFolder := os.Args[1] + "_jpegli-optimized"
 		err := os.MkdirAll(targetFolder, os.ModePerm)
