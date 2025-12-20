@@ -1,3 +1,5 @@
+//go:build windows
+
 package main
 
 import (
@@ -32,6 +34,10 @@ func TestRun_Help(t *testing.T) {
 }
 
 func prepareTestFile(t *testing.T, originalFile string) (string, func()) {
+	if _, err := os.Stat(originalFile); os.IsNotExist(err) {
+		t.Skipf("Test file %s not found, skipping test", originalFile)
+	}
+
 	content, err := os.ReadFile(originalFile)
 	if err != nil {
 		t.Fatalf("Failed to read original file: %v", err)
@@ -55,7 +61,7 @@ func prepareTestFile(t *testing.T, originalFile string) (string, func()) {
 }
 
 func TestRun_ConvertFile(t *testing.T) {
-	originalFile := "test-files\\DSC_4045-NEF_DxO_DeepPRIME.jpg"
+	originalFile := filepath.Join("test-files", "DSC_4045-NEF_DxO_DeepPRIME.jpg")
 	testFile, cleanup := prepareTestFile(t, originalFile)
 	defer cleanup()
 
@@ -97,7 +103,7 @@ func TestRun_ConvertFile(t *testing.T) {
 }
 
 func TestRun_ConvertFile_Override(t *testing.T) {
-	originalFile := "test-files\\DSC_4045-NEF_DxO_DeepPRIME.jpg"
+	originalFile := filepath.Join("test-files", "DSC_4045-NEF_DxO_DeepPRIME.jpg")
 	testFile, cleanup := prepareTestFile(t, originalFile)
 	defer cleanup()
 
