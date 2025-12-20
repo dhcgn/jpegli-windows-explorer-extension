@@ -1,4 +1,6 @@
-[![Go](https://github.com/dhcgn/jpegli-windows-explorer-extension/actions/workflows/go.yml/badge.svg)](https://github.com/dhcgn/jpegli-windows-explorer-extension/actions/workflows/go.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/dhcgn/jpegli-windows-explorer-extension?label=Windows%20Releases)](https://github.com/dhcgn/jpegli-windows-explorer-extension/releases)  
+[![Go](https://img.shields.io/github/actions/workflow/status/dhcgn/jpegli-windows-explorer-extension/go.yml?label=build%20and%20test
+)](https://github.com/dhcgn/jpegli-windows-explorer-extension/actions/workflows/go.yml)
 
 # JPEG Optimizer for Windows with jpegli
 
@@ -52,6 +54,12 @@ You can use the JPEG Optimizer directly in your Lightroom export workflow:
 ![Lightroom Export Dialog showing integration](docs/lightroom-plugin.png)
 
 This allows you to seamlessly optimize your JPEGs as part of your regular Lightroom export process.
+
+**Note:** Due to Operating System limitations on the length of arguments, Lightroom may start multiple instances of the executable if many files are selected. This will result in multiple windows opening.
+
+For a more seamless experience with Lightroom, you can adjust the following options in the `config.yaml`:
+- `no_user_interaction`: Set to `true` to prevent the window from waiting for user input.
+- `override_original_file`: Set to `true` to replace the original files directly.
 
 ## Purpose
 
