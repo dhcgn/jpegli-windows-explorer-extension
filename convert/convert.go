@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/dhcgn/jpegli-windows-explorer-extension/types"
 )
@@ -49,9 +50,18 @@ func Convert(tools types.ExecutablePaths, distance float64, overrideOriginal boo
 
 	// Determine the actual target path (temporary or final)
 	actualTargetPath := targetPath
+	var tempFile *os.File
 	if overrideOriginal {
-		// Use temporary file if we're going to override the original
-		actualTargetPath = sourcePath + ".jpegli.tmp"
+		// Use a temporary file if we're going to override the original
+		// Create temp file in the same directory as source to ensure we're on the same filesystem
+		dir := filepath.Dir(sourcePath)
+		var err error
+		tempFile, err = os.CreateTemp(dir, ".jpegli-*.tmp")
+		if err != nil {
+			return ConvertStats{}, fmt.Errorf("failed to create temporary file: %w", err)
+		}
+		tempFile.Close() // Close immediately, we just need the path
+		actualTargetPath = tempFile.Name()
 	}
 
 	// Use exec.Command to run cjpegli with the provided distance parameter

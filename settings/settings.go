@@ -1,7 +1,6 @@
 package settings
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -49,12 +48,6 @@ func LoadOrDefault() (Seetings, string, error) {
 		saveDefaultConfig(defaultOpts)
 		return defaultOpts, cfgPath, err
 	}
-	
-	// Print config file path and settings
-	fmt.Println("Config file path:", cfgPath)
-	fmt.Printf("Config settings:\n")
-	fmt.Printf("  distance: %.2f\n", opts.Distance)
-	fmt.Printf("  override_original_file: %v\n", opts.OverrideOriginalFile)
 	
 	return opts, cfgPath, nil
 }
