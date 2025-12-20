@@ -197,7 +197,7 @@ func showSettings(tools *types.ExecutablePaths, opts settings.Seetings, cfgPath 
 }
 
 func getFilesOrExit(filesOrDirs []string) []string {
-	warn := func(msg string) { pterm.Warning.Printfln(msg) }
+	warn := func(msg string) { pterm.Warning.Printfln("%s", msg) }
 	filter := func(path string) bool {
 		ext := strings.ToLower(filepath.Ext(path))
 		switch ext {

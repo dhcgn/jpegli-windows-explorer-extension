@@ -3,13 +3,28 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/dhcgn/jpegli-windows-explorer-extension/install"
 	"github.com/dhcgn/jpegli-windows-explorer-extension/settings"
 )
+
+func TestMain(m *testing.M) {
+	_, err := install.GetToolsPath()
+	if err != nil {
+		fmt.Println("Tools not found, attempting to install...")
+		if err := install.Do(); err != nil {
+			fmt.Printf("Failed to install tools: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	os.Exit(m.Run())
+}
 
 func defaultTestingSettings() *settings.Seetings {
 	return &settings.Seetings{
