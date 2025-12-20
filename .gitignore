@@ -8,6 +8,9 @@
 *.so
 *.dylib
 
+# Built binaries without extension
+jpegli-windows-explorer-extension
+
 # Test binary, built with `go test -c`
 *.test
 
