@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	update "github.com/dhcgn/gh-update"
 	"github.com/dhcgn/jpegli-windows-explorer-extension/convert"
 	"github.com/dhcgn/jpegli-windows-explorer-extension/filehandling"
 	"github.com/dhcgn/jpegli-windows-explorer-extension/install"
@@ -34,6 +35,31 @@ func main() {
 	fmt.Println("jpegli-windows-explorer-extension")
 	fmt.Printf("Version: %s, Build: %s, Commit: %s\n", Version, Build, Commit)
 
+	if !settings.CheckForConfigFile() {
+		pterm.Warning.Println("No configuration file found, creating default configuration at " + settings.GetConfigFilePath())
+	}
+
+	opts, cfgPath, err := settings.LoadOrDefault()
+	if err != nil {
+		pterm.Warning.Printfln("Error loading settings, using defaults: %s", err)
+		waitForAnyKey()
+		return
+	}
+
+	if opts.SkipUpdateCheck {
+		pterm.Info.Println("Skipping update check as per configuration.")
+	} else {
+		pterm.Print("Checking for updates ... ")
+		lr, err := update.GetLatestVersion("dhcgn/jpegli-windows-explorer-extension", Version, "^jpegli-windows-explorer-extension.exe$")
+		if err == update.ErrorNoNewVersionFound {
+			pterm.Info.Println("You are running the latest version.")
+		} else if err != nil {
+			pterm.Warning.Println("Failed to check for updates.")
+			pterm.Warning.Printfln("Error: %s", err)
+		} else {
+			pterm.Printf("New Version: '%s' is available! You have '%s'\n", lr.Version, Version)
+		}
+	}
 	if handleInstallPrompt() {
 		waitForAnyKey()
 		return
@@ -45,12 +71,6 @@ func main() {
 		return
 	}
 
-	opts, cfgPath, err := settings.LoadOrDefault()
-	if err != nil {
-		pterm.Warning.Printfln("Error loading settings, using defaults: %s", err)
-		waitForAnyKey()
-		return
-	}
 	showSettings(tools, opts, cfgPath)
 
 	printArgs()
