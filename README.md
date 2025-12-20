@@ -125,9 +125,13 @@ The default settings are set to ensure high quality!
 
 ```yaml
 distance: 0.5
+override_original_file: false
 ```
 
-- `distance`: Controls the jpegli quality setting. Lower values mean higher quality (recommended range: 0.5–3.0, where 1.0 is visually lossless).
+**Configuration Options:**
+
+- `distance`: Controls the jpegli quality setting. Lower values mean higher quality (recommended range: 0.5–3.0, where 1.0 is visually lossless). Default: `0.5`
+- `override_original_file`: When set to `true`, the original file will be replaced with the optimized version. The replacement only occurs if both `cjpegli` and `exiftool` run successfully. When set to `false` (default), a new file with `.jpegli.jpg` suffix is created instead. Default: `false`
 
 You can edit this file to adjust the optimization settings to your preference.
 
