@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/dhcgn/jpegli-windows-explorer-extension/types"
 )
-
-type ConvertOptions struct {
-	Distance float64
-}
 
 type ConvertStats struct {
 	FileSizeRatio float64
@@ -19,7 +16,7 @@ type ConvertStats struct {
 	SavedSize     int64
 }
 
-func Convert(tools types.ExecutablePaths, opts ConvertOptions, sourcePath, targetPath string) (ConvertStats, error) {
+func Convert(tools types.ExecutablePaths, distance float64, overrideOriginal bool, sourcePath, targetPath string) (ConvertStats, error) {
 	// Validate tools paths
 	if tools.Cjpegli == "" {
 		return ConvertStats{}, fmt.Errorf("cjpegli path is empty")
@@ -42,31 +39,63 @@ func Convert(tools types.ExecutablePaths, opts ConvertOptions, sourcePath, targe
 	// Step 1: Convert image with cjpegli.exe using the distance option
 	// Default to 1.0 if not specified (visually lossless)
 	// Allowed range is 0.0 to 25.0
-	distance := 1.0
-	if opts.Distance >= 0.0 && opts.Distance <= 25.0 {
-		distance = opts.Distance
-	} else if opts.Distance > 25.0 {
-		distance = 25.0
-	} else if opts.Distance < 0.0 {
-		distance = 0.0
+	distanceValue := 1.0
+	if distance >= 0.0 && distance <= 25.0 {
+		distanceValue = distance
+	} else if distance > 25.0 {
+		distanceValue = 25.0
+	} else if distance < 0.0 {
+		distanceValue = 0.0
+	}
+
+	// Determine the actual target path (temporary or final)
+	actualTargetPath := targetPath
+	var tempFile *os.File
+	if overrideOriginal {
+		// Use a temporary file if we're going to override the original
+		// Create temp file in the same directory as source to ensure we're on the same filesystem
+		dir := filepath.Dir(sourcePath)
+		var err error
+		tempFile, err = os.CreateTemp(dir, ".jpegli-*.tmp")
+		if err != nil {
+			return ConvertStats{}, fmt.Errorf("failed to create temporary file: %w", err)
+		}
+		tempFile.Close() // Close immediately, we just need the path
+		actualTargetPath = tempFile.Name()
 	}
 
 	// Use exec.Command to run cjpegli with the provided distance parameter
-	cmd := exec.Command(tools.Cjpegli, sourcePath, targetPath, "-d", fmt.Sprintf("%.1f", distance))
+	cmd := exec.Command(tools.Cjpegli, sourcePath, actualTargetPath, "-d", fmt.Sprintf("%.1f", distanceValue))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return ConvertStats{}, fmt.Errorf("cjpegli execution failed: %w\nOutput: %s", err, output)
 	}
 
 	// Step 2: Copy metadata from source to target using ExifTool
-	cmd = exec.Command(tools.Exiftool, "-overwrite_original", "-TagsFromFile", sourcePath, targetPath)
+	cmd = exec.Command(tools.Exiftool, "-overwrite_original", "-TagsFromFile", sourcePath, actualTargetPath)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
+		// Clean up temporary file if it exists
+		if overrideOriginal {
+			os.Remove(actualTargetPath)
+		}
 		return ConvertStats{}, fmt.Errorf("exiftool execution failed: %w\nOutput: %s", err, output)
 	}
 
-	// Step 3: Get file sizes and calculate statistics
-	targetInfo, err := os.Stat(targetPath)
+	// Step 3: If overrideOriginal is true and both tools succeeded, replace the original file
+	if overrideOriginal {
+		// Both cjpegli and exiftool have succeeded, now replace the original
+		err = os.Rename(actualTargetPath, sourcePath)
+		if err != nil {
+			os.Remove(actualTargetPath) // Clean up temporary file
+			return ConvertStats{}, fmt.Errorf("failed to replace original file: %w", err)
+		}
+		// Update targetPath to sourcePath for stats calculation
+		actualTargetPath = sourcePath
+	}
+
+	// Step 4: Get file sizes and calculate statistics
+	targetInfo, err := os.Stat(actualTargetPath)
 	if err != nil {
 		return ConvertStats{}, fmt.Errorf("error getting target file info: %w", err)
 	}

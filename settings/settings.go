@@ -5,11 +5,16 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dhcgn/jpegli-windows-explorer-extension/convert"
 	"gopkg.in/yaml.v3"
 )
 
 const configFileName = "config.yaml"
+
+// Seetings represents the configuration options for the application
+type Seetings struct {
+	Distance             float64 `yaml:"distance"`
+	OverrideOriginalFile bool    `yaml:"override_original_file"`
+}
 
 func configFilePath() string {
 	exePath, err := os.Executable()
@@ -20,8 +25,8 @@ func configFilePath() string {
 	return filepath.Join(dir, configFileName)
 }
 
-func LoadOrDefault() (convert.ConvertOptions, error) {
-	defaultOpts := convert.ConvertOptions{Distance: 0.5}
+func LoadOrDefault() (Seetings, string, error) {
+	defaultOpts := Seetings{Distance: 0.5, OverrideOriginalFile: false}
 	cfgPath := configFilePath()
 	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
 		saveDefaultConfig(defaultOpts)
@@ -29,24 +34,25 @@ func LoadOrDefault() (convert.ConvertOptions, error) {
 	file, err := os.Open(cfgPath)
 	if err != nil {
 		saveDefaultConfig(defaultOpts)
-		return defaultOpts, err
+		return defaultOpts, cfgPath, err
 	}
 	defer file.Close()
 	data, err := io.ReadAll(file)
 	if err != nil {
 		saveDefaultConfig(defaultOpts)
-		return defaultOpts, err
+		return defaultOpts, cfgPath, err
 	}
-	var opts convert.ConvertOptions
+	var opts Seetings
 	err = yaml.Unmarshal(data, &opts)
 	if err != nil {
 		saveDefaultConfig(defaultOpts)
-		return defaultOpts, err
+		return defaultOpts, cfgPath, err
 	}
-	return opts, nil
+	
+	return opts, cfgPath, nil
 }
 
-func saveDefaultConfig(cfg convert.ConvertOptions) {
+func saveDefaultConfig(cfg Seetings) {
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
 		return

@@ -45,13 +45,13 @@ func main() {
 		return
 	}
 
-	opts, err := settings.LoadOrDefault()
+	opts, cfgPath, err := settings.LoadOrDefault()
 	if err != nil {
 		pterm.Warning.Printfln("Error loading settings, using defaults: %s", err)
 		waitForAnyKey()
 		return
 	}
-	showSettings(tools, opts)
+	showSettings(tools, opts, cfgPath)
 
 	printArgs()
 	filesOrDirs := os.Args[1:]
@@ -115,11 +115,13 @@ func getToolsOrExit() *types.ExecutablePaths {
 	return &tools
 }
 
-func showSettings(tools *types.ExecutablePaths, opts convert.ConvertOptions) {
+func showSettings(tools *types.ExecutablePaths, opts settings.Seetings, cfgPath string) {
 	pterm.DefaultHeader.Println("Settings")
+	pterm.Info.Printfln("Config file:     %s", cfgPath)
 	pterm.Info.Printfln("Exiftool path:   %s", tools.Exiftool)
 	pterm.Info.Printfln("cjpegli path:    %s", tools.Cjpegli)
 	pterm.Info.Printfln("Jpegli Distance: %.2f (recommended 0.5-3.0, 1.0 = visually lossless, lower better)", opts.Distance)
+	pterm.Info.Printfln("Override Original: %v", opts.OverrideOriginalFile)
 	pterm.DefaultHeader.Println("Converting")
 }
 
@@ -192,15 +194,22 @@ func checkIsDirOrExit(filesOrDirs []string) (*bool, error) {
 	return nil, fmt.Errorf("invalid combination: must be either a single directory or multiple files only")
 }
 
-func convertFilesOrExit(files []string, isDir bool, tools *types.ExecutablePaths, opts convert.ConvertOptions) []convert.ConvertStats {
+func convertFilesOrExit(files []string, isDir bool, tools *types.ExecutablePaths, opts settings.Seetings) []convert.ConvertStats {
 	states := []convert.ConvertStats{}
 	if !isDir {
 		for _, file := range files {
-			baseName := filepath.Base(file)
-			ext := filepath.Ext(baseName)
-			targetName := strings.TrimSuffix(baseName, ext) + ".jpegli.jpg"
-			targetPath := filepath.Join(filepath.Dir(file), targetName)
-			stat, err := convert.Convert(*tools, opts, file, targetPath)
+			var targetPath string
+			if opts.OverrideOriginalFile {
+				// When overriding, use the source file as the target
+				targetPath = file
+			} else {
+				// When not overriding, create a new file with .jpegli.jpg suffix
+				baseName := filepath.Base(file)
+				ext := filepath.Ext(baseName)
+				targetName := strings.TrimSuffix(baseName, ext) + ".jpegli.jpg"
+				targetPath = filepath.Join(filepath.Dir(file), targetName)
+			}
+			stat, err := convert.Convert(*tools, opts.Distance, opts.OverrideOriginalFile, file, targetPath)
 			if err != nil {
 				pterm.Error.Printfln("Error converting file: %s", err)
 				return nil
@@ -224,7 +233,7 @@ func convertFilesOrExit(files []string, isDir bool, tools *types.ExecutablePaths
 				baseName = strings.TrimSuffix(baseName, ext) + ".jpg"
 			}
 			targetFilePath := targetFolder + string(os.PathSeparator) + baseName
-			stat, err := convert.Convert(*tools, opts, file, targetFilePath)
+			stat, err := convert.Convert(*tools, opts.Distance, opts.OverrideOriginalFile, file, targetFilePath)
 			if err != nil {
 				pterm.Error.Printfln("Error converting file: %s", err)
 				return nil
