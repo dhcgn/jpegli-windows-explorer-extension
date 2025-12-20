@@ -126,6 +126,7 @@ The default settings are set to ensure high quality!
 ```yaml
 distance: 0.5
 override_original_file: false
+skip_update_check: false
 ```
 
 **Configuration Options:**

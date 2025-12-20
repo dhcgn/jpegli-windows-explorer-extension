@@ -14,6 +14,7 @@ const configFileName = "config.yaml"
 type Seetings struct {
 	Distance             float64 `yaml:"distance"`
 	OverrideOriginalFile bool    `yaml:"override_original_file"`
+	SkipUpdateCheck      bool    `yaml:"skip_update_check"`
 }
 
 func configFilePath() string {
@@ -25,8 +26,20 @@ func configFilePath() string {
 	return filepath.Join(dir, configFileName)
 }
 
+func GetConfigFilePath() string {
+	return configFilePath()
+}
+
+func CheckForConfigFile() bool {
+	cfgPath := configFilePath()
+	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
 func LoadOrDefault() (Seetings, string, error) {
-	defaultOpts := Seetings{Distance: 0.5, OverrideOriginalFile: false}
+	defaultOpts := Seetings{Distance: 0.5, OverrideOriginalFile: false, SkipUpdateCheck: false}
 	cfgPath := configFilePath()
 	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
 		saveDefaultConfig(defaultOpts)
@@ -48,7 +61,7 @@ func LoadOrDefault() (Seetings, string, error) {
 		saveDefaultConfig(defaultOpts)
 		return defaultOpts, cfgPath, err
 	}
-	
+
 	return opts, cfgPath, nil
 }
 
