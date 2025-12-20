@@ -19,42 +19,74 @@ const (
 	AppName = "jpegli-windows-explorer-extension"
 )
 
+const (
+	ExitCodeSuccess         = 0
+	ExitCodeSettingsError   = 1
+	ExitCodeToolsMissing    = 2
+	ExitCodePathError       = 3
+	ExitCodeNoFiles         = 4
+	ExitCodeConversionError = 5
+)
+
 var (
 	Version = "UNSET"
 	Build   = "UNSET"
 	Commit  = "UNSET"
 )
 
-func waitForAnyKey() {
+type App struct {
+	NoUserInteraction bool
+}
+
+func (a *App) WaitForAnyKey() {
+	if a.NoUserInteraction {
+		return
+	}
+
 	fmt.Println("Press any key to continue...")
 	var input [1]byte
 	os.Stdin.Read(input[:])
 }
 
 func main() {
+	os.Exit(Run(os.Args, nil))
+}
+
+func Run(args []string, opts *settings.Seetings) int {
+	app := &App{}
+
 	fmt.Println("jpegli-windows-explorer-extension")
 	fmt.Printf("Version: %s, Build: %s, Commit: %s\n", Version, Build, Commit)
 
 	// if one of the args is --help or -h, show help and exit
-	for _, arg := range os.Args {
+	for _, arg := range args {
 		if arg == "--help" || arg == "-h" {
 			pterm.Println("Usage: jpegli-windows-explorer-extension [file1 file2 ... | directory]")
 			pterm.Println("Documentation: https://github.com/dhcgn/jpegli-windows-explorer-extension/blob/main/README.md")
-			waitForAnyKey()
-			return
+			app.WaitForAnyKey()
+			return ExitCodeSuccess
 		}
 	}
 
-	if !settings.CheckForConfigFile() {
-		pterm.Warning.Println("No configuration file found, creating default configuration at " + settings.GetConfigFilePath())
+	var cfgPath string
+	if opts == nil {
+		if !settings.CheckForConfigFile() {
+			pterm.Warning.Println("No configuration file found, creating default configuration at " + settings.GetConfigFilePath())
+		}
+
+		loadedOpts, path, err := settings.LoadOrDefault()
+		if err != nil {
+			pterm.Warning.Printfln("Error loading settings, using defaults: %s", err)
+			app.WaitForAnyKey()
+			return ExitCodeSettingsError
+		}
+		opts = &loadedOpts
+		cfgPath = path
+	} else {
+		cfgPath = "provided"
 	}
 
-	opts, cfgPath, err := settings.LoadOrDefault()
-	if err != nil {
-		pterm.Warning.Printfln("Error loading settings, using defaults: %s", err)
-		waitForAnyKey()
-		return
-	}
+	app.NoUserInteraction = opts.NoUserInteraction
 
 	if opts.SkipUpdateCheck {
 		pterm.Info.Println("Skipping update check as per configuration.")
@@ -72,48 +104,58 @@ func main() {
 	}
 
 	// If no arguments provided, show install prompt
-	if len(os.Args) == 1 {
+	if len(args) == 1 {
 		handleInstallPrompt()
-		waitForAnyKey()
-		return
+		app.WaitForAnyKey()
+		return ExitCodeSuccess
 	}
 
 	tools := getToolsOrExit()
 	if tools == nil {
-		waitForAnyKey()
-		return
+		app.WaitForAnyKey()
+		return ExitCodeToolsMissing
 	}
 
-	showSettings(tools, opts, cfgPath)
+	showSettings(tools, *opts, cfgPath)
 
-	printArgs()
-	filesOrDirs := os.Args[1:]
+	if opts.NoUserInteraction {
+		pterm.Info.Println("No user interaction mode enabled for processing files.")
+	}
+
+	printArgs(args)
+	filesOrDirs := args[1:]
 
 	isDir, err := checkIsDirOrExit(filesOrDirs)
 	if err != nil {
 		pterm.Error.Printfln("Error checking if path is a directory: %s", err)
-		waitForAnyKey()
-		return
+		app.WaitForAnyKey()
+		return ExitCodePathError
 	}
 	if isDir == nil {
-		waitForAnyKey()
-		return
+		app.WaitForAnyKey()
+		return ExitCodePathError
 	}
 
 	files := getFilesOrExit(filesOrDirs)
 	if files == nil {
-		waitForAnyKey()
-		return
+		app.WaitForAnyKey()
+		return ExitCodeNoFiles
 	}
 
-	states := convertFilesOrExit(files, *isDir, tools, opts)
+	var targetDirBase string
+	if len(filesOrDirs) > 0 {
+		targetDirBase = filesOrDirs[0]
+	}
+
+	states := convertFilesOrExit(files, *isDir, tools, *opts, targetDirBase)
 	if states == nil {
-		waitForAnyKey()
-		return
+		app.WaitForAnyKey()
+		return ExitCodeConversionError
 	}
 
 	printStats(states)
-	waitForAnyKey()
+	app.WaitForAnyKey()
+	return ExitCodeSuccess
 }
 
 func handleInstallPrompt() {
@@ -129,9 +171,9 @@ func handleInstallPrompt() {
 	}
 }
 
-func printArgs() {
-	for i := 1; i < len(os.Args); i++ {
-		fmt.Printf("file/folder: %d: %s\n", i, os.Args[i])
+func printArgs(args []string) {
+	for i := 1; i < len(args); i++ {
+		fmt.Printf("file/folder: %d: %s\n", i, args[i])
 	}
 }
 
@@ -223,7 +265,7 @@ func checkIsDirOrExit(filesOrDirs []string) (*bool, error) {
 	return nil, fmt.Errorf("invalid combination: must be either a single directory or multiple files only")
 }
 
-func convertFilesOrExit(files []string, isDir bool, tools *types.ExecutablePaths, opts settings.Seetings) []convert.ConvertStats {
+func convertFilesOrExit(files []string, isDir bool, tools *types.ExecutablePaths, opts settings.Seetings, targetDirBase string) []convert.ConvertStats {
 	states := []convert.ConvertStats{}
 	if !isDir {
 		for _, file := range files {
@@ -247,7 +289,7 @@ func convertFilesOrExit(files []string, isDir bool, tools *types.ExecutablePaths
 			pterm.Info.Printfln("Converted file: %s with ratio %.2f", file, stat.FileSizeRatio)
 		}
 	} else {
-		targetFolder := os.Args[1] + "_jpegli-optimized"
+		targetFolder := targetDirBase + "_jpegli-optimized"
 		err := os.MkdirAll(targetFolder, os.ModePerm)
 		if err != nil {
 			pterm.Error.Printfln("Error creating target folder: %s", err)

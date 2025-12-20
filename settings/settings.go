@@ -15,6 +15,7 @@ type Seetings struct {
 	Distance             float64 `yaml:"distance"`
 	OverrideOriginalFile bool    `yaml:"override_original_file"`
 	SkipUpdateCheck      bool    `yaml:"skip_update_check"`
+	NoUserInteraction    bool    `yaml:"no_user_interaction"`
 }
 
 func configFilePath() string {
@@ -39,7 +40,7 @@ func CheckForConfigFile() bool {
 }
 
 func LoadOrDefault() (Seetings, string, error) {
-	defaultOpts := Seetings{Distance: 0.5, OverrideOriginalFile: false, SkipUpdateCheck: false}
+	defaultOpts := Seetings{Distance: 0.5, OverrideOriginalFile: false, SkipUpdateCheck: false, NoUserInteraction: false}
 	cfgPath := configFilePath()
 	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
 		saveDefaultConfig(defaultOpts)

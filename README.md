@@ -127,6 +127,7 @@ The default settings are set to ensure high quality!
 distance: 0.5
 override_original_file: false
 skip_update_check: false
+no_user_interaction: false
 ```
 
 **Configuration Options:**
