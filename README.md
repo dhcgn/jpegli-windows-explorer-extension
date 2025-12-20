@@ -134,6 +134,8 @@ no_user_interaction: false
 
 - `distance`: Controls the jpegli quality setting. Lower values mean higher quality (recommended range: 0.5–3.0, where 1.0 is visually lossless). Default: `0.5`
 - `override_original_file`: When set to `true`, the original file will be replaced with the optimized version. The replacement only occurs if both `cjpegli` and `exiftool` run successfully. When set to `false` (default), a new file with `.jpegli.jpg` suffix is created instead. Default: `false`
+- `skip_update_check`: When set to `true`, the application will not check for updates on startup. Default: `false`
+- `no_user_interaction`: When set to `true`, the application will not wait for user input (e.g. "Press any key to continue") before exiting. This is useful for automated workflows. Default: `false`
 
 You can edit this file to adjust the optimization settings to your preference.
 
