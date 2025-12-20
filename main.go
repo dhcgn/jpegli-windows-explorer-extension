@@ -35,6 +35,16 @@ func main() {
 	fmt.Println("jpegli-windows-explorer-extension")
 	fmt.Printf("Version: %s, Build: %s, Commit: %s\n", Version, Build, Commit)
 
+	// if one of the args is --help or -h, show help and exit
+	for _, arg := range os.Args {
+		if arg == "--help" || arg == "-h" {
+			pterm.Println("Usage: jpegli-windows-explorer-extension [file1 file2 ... | directory]")
+			pterm.Println("Documentation: https://github.com/dhcgn/jpegli-windows-explorer-extension/blob/main/README.md")
+			waitForAnyKey()
+			return
+		}
+	}
+
 	if !settings.CheckForConfigFile() {
 		pterm.Warning.Println("No configuration file found, creating default configuration at " + settings.GetConfigFilePath())
 	}
@@ -60,7 +70,10 @@ func main() {
 			pterm.Printf("New Version: '%s' is available! You have '%s'\n", lr.Version, Version)
 		}
 	}
-	if handleInstallPrompt() {
+
+	// If no arguments provided, show install prompt
+	if len(os.Args) == 1 {
+		handleInstallPrompt()
 		waitForAnyKey()
 		return
 	}
@@ -103,21 +116,17 @@ func main() {
 	waitForAnyKey()
 }
 
-func handleInstallPrompt() bool {
-	if len(os.Args) == 1 {
-		pterm.Println("No arguments provided. Want to install and set context menu?")
-		result, _ := pterm.DefaultInteractiveConfirm.Show()
-		pterm.Println()
-		pterm.Info.Printfln("You answered: %s", boolToText(result))
-		if result {
-			install.Do()
-			pterm.Println("Installation completed.")
-		} else {
-			pterm.Println("You chose not to install.")
-		}
-		return true
+func handleInstallPrompt() {
+	pterm.Println("No arguments provided. Want to install and set context menu? --help for more info.")
+	result, _ := pterm.DefaultInteractiveConfirm.Show()
+	pterm.Println()
+	pterm.Info.Printfln("You answered: %s", boolToText(result))
+	if result {
+		install.Do()
+		pterm.Println("Installation completed.")
+	} else {
+		pterm.Println("You chose not to install.")
 	}
-	return false
 }
 
 func printArgs() {
