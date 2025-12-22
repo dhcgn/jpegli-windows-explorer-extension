@@ -204,3 +204,76 @@ func TestRun_ConvertFile_Override_Different_File_Type(t *testing.T) {
 		t.Errorf("Expected original file %s to exist", testFile)
 	}
 }
+
+func prepareTestFolder(t *testing.T, files []string) (string, func()) {
+	tempDir, err := os.MkdirTemp("test-files", "test-folder-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+
+	for _, file := range files {
+		content, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatalf("Failed to read file %s: %v", file, err)
+		}
+		baseName := filepath.Base(file)
+		if err := os.WriteFile(filepath.Join(tempDir, baseName), content, 0644); err != nil {
+			t.Fatalf("Failed to write file %s: %v", baseName, err)
+		}
+	}
+
+	return tempDir, func() {
+		os.RemoveAll(tempDir)
+	}
+}
+
+func TestRun_ConvertFolder(t *testing.T) {
+	files := []string{
+		filepath.Join("test-files", "DSC_4045-NEF_DxO_DeepPRIME.jpg"),
+		filepath.Join("test-files", "Untitled.png"),
+	}
+	testDir, cleanup := prepareTestFolder(t, files)
+	defer cleanup()
+
+	// Calculate expected output folder
+	expectedOutputFolder := testDir + "_jpegli-optimized"
+	defer os.RemoveAll(expectedOutputFolder)
+
+	args := []string{"app", testDir}
+
+	exitCode := Run(args, defaultTestingSettings())
+
+	if exitCode != ExitCodeSuccess {
+		t.Errorf("Expected exit code %d, got %d", ExitCodeSuccess, exitCode)
+	}
+
+	if _, err := os.Stat(expectedOutputFolder); os.IsNotExist(err) {
+		t.Errorf("Expected output folder %s to be created", expectedOutputFolder)
+	}
+
+	// Check DSC_4045-NEF_DxO_DeepPRIME.jpg
+	jpgFile := filepath.Join(expectedOutputFolder, "DSC_4045-NEF_DxO_DeepPRIME.jpg")
+	if _, err := os.Stat(jpgFile); os.IsNotExist(err) {
+		t.Errorf("Expected output file %s to be created", jpgFile)
+	} else {
+		// Check if new file is smaller
+		inputStat, err := os.Stat(files[0])
+		if err != nil {
+			t.Fatalf("Failed to stat input file: %v", err)
+		}
+		outputStat, err := os.Stat(jpgFile)
+		if err != nil {
+			t.Fatalf("Failed to stat output file: %v", err)
+		}
+
+		if outputStat.Size() >= inputStat.Size() {
+			t.Errorf("Expected output file to be smaller than input file. Input: %d, Output: %d", inputStat.Size(), outputStat.Size())
+		}
+	}
+
+	// Check Untitled.jpg (converted from png)
+	pngConvertedFile := filepath.Join(expectedOutputFolder, "Untitled.jpg")
+	if _, err := os.Stat(pngConvertedFile); os.IsNotExist(err) {
+		t.Errorf("Expected output file %s to be created", pngConvertedFile)
+	}
+}
