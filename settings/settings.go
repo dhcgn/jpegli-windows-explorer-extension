@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/dhcgn/jpegli-windows-explorer-extension/install"
 	"gopkg.in/yaml.v3"
 )
 
@@ -27,6 +28,10 @@ func configFilePath() string {
 	return filepath.Join(dir, configFileName)
 }
 
+func configInstallFilePath() string {
+	return filepath.Join(install.GetAppFolder(), configFileName)
+}
+
 func GetConfigFilePath() string {
 	return configFilePath()
 }
@@ -39,37 +44,47 @@ func CheckForConfigFile() bool {
 	return true
 }
 
+func LoadOrDefaultInDefaultInstallationPath() (Settings, string, error) {
+	cfgPath := configInstallFilePath()
+	return loadOrDefault(cfgPath)
+}
+
 func LoadOrDefault() (Settings, string, error) {
-	defaultOpts := Settings{Distance: 0.5, OverrideOriginalFile: false, SkipUpdateCheck: false, NoUserInteraction: false}
 	cfgPath := configFilePath()
+	return loadOrDefault(cfgPath)
+}
+
+func loadOrDefault(cfgPath string) (Settings, string, error) {
+	defaultOpts := Settings{Distance: 0.5, OverrideOriginalFile: false, SkipUpdateCheck: false, NoUserInteraction: false}
+
 	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
-		saveDefaultConfig(defaultOpts)
+		saveDefaultConfig(cfgPath, defaultOpts)
 	}
 	file, err := os.Open(cfgPath)
 	if err != nil {
-		saveDefaultConfig(defaultOpts)
+		saveDefaultConfig(cfgPath, defaultOpts)
 		return defaultOpts, cfgPath, err
 	}
 	defer file.Close()
 	data, err := io.ReadAll(file)
 	if err != nil {
-		saveDefaultConfig(defaultOpts)
+		saveDefaultConfig(cfgPath, defaultOpts)
 		return defaultOpts, cfgPath, err
 	}
 	var opts Settings
 	err = yaml.Unmarshal(data, &opts)
 	if err != nil {
-		saveDefaultConfig(defaultOpts)
+		saveDefaultConfig(cfgPath, defaultOpts)
 		return defaultOpts, cfgPath, err
 	}
 
 	return opts, cfgPath, nil
 }
 
-func saveDefaultConfig(cfg Settings) {
+func saveDefaultConfig(path string, cfg Settings) {
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
 		return
 	}
-	_ = os.WriteFile(configFilePath(), data, 0644)
+	_ = os.WriteFile(path, data, 0644)
 }

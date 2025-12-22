@@ -45,7 +45,7 @@ func Do() error {
 
 func deleteAllFolders() {
 	// Get the application folder
-	appFolder := getAppFolder()
+	appFolder := GetAppFolder()
 	if appFolder == "" {
 		fmt.Println("Failed to get application folder")
 		return
@@ -60,7 +60,7 @@ func deleteAllFolders() {
 	}
 }
 
-func getAppFolder() string {
+func GetAppFolder() string {
 	// Get the user cache directory
 	cacheDir, err := os.UserCacheDir()
 	if err != nil {
@@ -81,7 +81,7 @@ func GetToolsPath() (types.ExecutablePaths, error) {
 	}
 
 	// Get the application folder
-	appFolder := getAppFolder()
+	appFolder := GetAppFolder()
 	if appFolder == "" {
 		fmt.Println("Failed to get application folder")
 		return execPaths, fmt.Errorf("failed to get application folder")
@@ -113,7 +113,7 @@ func ExtractEmbeddedZipFilesToAppFolder() (types.ExecutablePaths, error) {
 	}
 
 	// Get the application folder
-	appFolder := getAppFolder()
+	appFolder := GetAppFolder()
 	if appFolder == "" {
 		fmt.Println("Failed to get application folder")
 		return execPaths, fmt.Errorf("failed to get application folder")
@@ -273,7 +273,7 @@ func CopyExecutableToProgramData() string {
 	}
 
 	// Create the target directory if it doesn't exist
-	targetDir := getAppFolder()
+	targetDir := GetAppFolder()
 	err = os.MkdirAll(targetDir, 0755)
 	if err != nil {
 		fmt.Printf("Error creating directory %s: %v\n", targetDir, err)

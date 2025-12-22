@@ -206,7 +206,7 @@ func handleInstallPrompt() {
 		install.Do()
 		pterm.Println("Installation completed.")
 
-		_, path, err := settings.LoadOrDefault()
+		_, path, err := settings.LoadOrDefaultInDefaultInstallationPath()
 		if err != nil {
 			pterm.Warning.Printfln("Error creating default config: %s", err)
 		} else {
