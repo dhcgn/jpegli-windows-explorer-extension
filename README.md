@@ -153,6 +153,17 @@ I recommend using https://www.scootersoftware.com/ to compare the original and o
 
 ![Compare with Beyond Compare](docs/bc_compare.png)
 
+## Exit Codes
+
+The application returns the following exit codes:
+
+- `0`: Success
+- `1`: Settings Error
+- `2`: Tools Missing
+- `3`: Path Error
+- `4`: No Files Found
+- `5`: Conversion Error
+
 ## Uninstallation
 
 To completely remove the JPEGLI Optimizer integration and its data from your system, follow these steps:

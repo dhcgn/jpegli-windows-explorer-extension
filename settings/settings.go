@@ -10,8 +10,8 @@ import (
 
 const configFileName = "config.yaml"
 
-// Seetings represents the configuration options for the application
-type Seetings struct {
+// Settings represents the configuration options for the application
+type Settings struct {
 	Distance             float64 `yaml:"distance"`
 	OverrideOriginalFile bool    `yaml:"override_original_file"`
 	SkipUpdateCheck      bool    `yaml:"skip_update_check"`
@@ -39,8 +39,8 @@ func CheckForConfigFile() bool {
 	return true
 }
 
-func LoadOrDefault() (Seetings, string, error) {
-	defaultOpts := Seetings{Distance: 0.5, OverrideOriginalFile: false, SkipUpdateCheck: false, NoUserInteraction: false}
+func LoadOrDefault() (Settings, string, error) {
+	defaultOpts := Settings{Distance: 0.5, OverrideOriginalFile: false, SkipUpdateCheck: false, NoUserInteraction: false}
 	cfgPath := configFilePath()
 	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
 		saveDefaultConfig(defaultOpts)
@@ -56,7 +56,7 @@ func LoadOrDefault() (Seetings, string, error) {
 		saveDefaultConfig(defaultOpts)
 		return defaultOpts, cfgPath, err
 	}
-	var opts Seetings
+	var opts Settings
 	err = yaml.Unmarshal(data, &opts)
 	if err != nil {
 		saveDefaultConfig(defaultOpts)
@@ -66,7 +66,7 @@ func LoadOrDefault() (Seetings, string, error) {
 	return opts, cfgPath, nil
 }
 
-func saveDefaultConfig(cfg Seetings) {
+func saveDefaultConfig(cfg Settings) {
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
 		return

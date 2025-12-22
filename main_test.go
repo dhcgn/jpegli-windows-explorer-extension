@@ -26,8 +26,8 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func defaultTestingSettings() *settings.Seetings {
-	return &settings.Seetings{
+func defaultTestingSettings() *settings.Settings {
+	return &settings.Settings{
 		// Default values
 		Distance:             0.5,
 		OverrideOriginalFile: false,

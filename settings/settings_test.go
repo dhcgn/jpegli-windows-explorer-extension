@@ -8,9 +8,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestSeetingsDefaultValues(t *testing.T) {
-	// Create a default Seetings instance
-	defaultOpts := Seetings{Distance: 0.5, OverrideOriginalFile: false}
+func TestSettingsDefaultValues(t *testing.T) {
+	// Create a default Settings instance
+	defaultOpts := Settings{Distance: 0.5, OverrideOriginalFile: false}
 
 	// Check default values
 	if defaultOpts.Distance != 0.5 {
@@ -21,19 +21,19 @@ func TestSeetingsDefaultValues(t *testing.T) {
 	}
 }
 
-func TestSeetingsYAMLSerialization(t *testing.T) {
+func TestSettingsYAMLSerialization(t *testing.T) {
 	// Test YAML marshaling
-	opts := Seetings{Distance: 1.5, OverrideOriginalFile: true}
+	opts := Settings{Distance: 1.5, OverrideOriginalFile: true}
 	data, err := yaml.Marshal(opts)
 	if err != nil {
-		t.Fatalf("Failed to marshal Seetings: %v", err)
+		t.Fatalf("Failed to marshal Settings: %v", err)
 	}
 
 	// Test YAML unmarshaling
-	var unmarshaled Seetings
+	var unmarshaled Settings
 	err = yaml.Unmarshal(data, &unmarshaled)
 	if err != nil {
-		t.Fatalf("Failed to unmarshal Seetings: %v", err)
+		t.Fatalf("Failed to unmarshal Settings: %v", err)
 	}
 
 	// Check values
@@ -54,7 +54,7 @@ func TestSaveAndLoadConfig(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	// Create test config
-	testConfig := Seetings{Distance: 2.5, OverrideOriginalFile: true}
+	testConfig := Settings{Distance: 2.5, OverrideOriginalFile: true}
 	configPath := filepath.Join(tempDir, "config.yaml")
 
 	// Marshal and save
@@ -73,7 +73,7 @@ func TestSaveAndLoadConfig(t *testing.T) {
 		t.Fatalf("Failed to read config file: %v", err)
 	}
 
-	var loaded Seetings
+	var loaded Settings
 	err = yaml.Unmarshal(fileData, &loaded)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal config: %v", err)

@@ -35,6 +35,7 @@ var (
 	Commit  = "UNSET"
 )
 
+// App holds the application state and configuration.
 type App struct {
 	NoUserInteraction bool
 }
@@ -63,58 +64,28 @@ func main() {
 	os.Exit(Run(os.Args, nil))
 }
 
-func Run(args []string, opts *settings.Seetings) int {
+// Run is the main entry point for the application logic.
+// It handles argument parsing, settings loading, update checks, and file processing.
+func Run(args []string, opts *settings.Settings) int {
 	app := &App{}
 
-	fmt.Println("jpegli-windows-explorer-extension")
-	fmt.Printf("Version: %s, Build: %s, Commit: %s\n", Version, Build, Commit)
+	printVersionInfo()
 
-	// if one of the args is --help or -h, show help and exit
-	for _, arg := range args {
-		if arg == "--help" || arg == "-h" {
-			pterm.Println("Usage: jpegli-windows-explorer-extension [file1 file2 ... | directory]")
-			pterm.Println("Documentation: https://github.com/dhcgn/jpegli-windows-explorer-extension/blob/main/README.md")
-			app.WaitForAnyKey()
-			return ExitCodeSuccess
-		}
+	if shouldShowHelp(args) {
+		showHelp()
+		app.WaitForAnyKey()
+		return ExitCodeSuccess
 	}
 
-	var cfgPath string
-	if opts == nil {
-		if !settings.CheckForConfigFile() {
-			pterm.Warning.Println("No configuration file found, creating default configuration at " + settings.GetConfigFilePath())
-		}
-
-		loadedOpts, path, err := settings.LoadOrDefault()
-		if err != nil {
-			pterm.Warning.Printfln("Error loading settings, using defaults: %s", err)
-			app.WaitForAnyKey()
-			return ExitCodeSettingsError
-		}
-		opts = &loadedOpts
-		cfgPath = path
-	} else {
-		cfgPath = "provided"
+	finalOpts, cfgPath, err := resolveSettings(opts)
+	if err != nil {
+		pterm.Warning.Printfln("Error loading settings, using defaults: %s", err)
+		app.WaitForAnyKey()
+		return ExitCodeSettingsError
 	}
+	app.NoUserInteraction = finalOpts.NoUserInteraction
 
-	app.NoUserInteraction = opts.NoUserInteraction
-
-	if opts.SkipUpdateCheck {
-		pterm.Info.Println("Skipping update check as per configuration.")
-	} else {
-		pterm.Print("Checking for updates ... ")
-		lr, err := update.GetLatestVersion("dhcgn/jpegli-windows-explorer-extension", Version, "^jpegli-windows-explorer-extension.exe$")
-		if err == update.ErrorNoNewVersionFound {
-			pterm.Info.Println("You are running the latest version.")
-		} else if err != nil {
-			pterm.Warning.Println("Failed to check for updates.")
-			pterm.Warning.Printfln("Error: %s", err)
-			pauseInConsole()
-		} else {
-			pterm.Printf("New Version: '%s' is available! You have '%s'\n", lr.Version, Version)
-			pauseInConsole()
-		}
-	}
+	checkForUpdates(finalOpts)
 
 	// If no arguments provided, show install prompt
 	if len(args) == 1 {
@@ -129,9 +100,9 @@ func Run(args []string, opts *settings.Seetings) int {
 		return ExitCodeToolsMissing
 	}
 
-	showSettings(tools, *opts, cfgPath)
+	showSettings(tools, *finalOpts, cfgPath)
 
-	if opts.NoUserInteraction {
+	if finalOpts.NoUserInteraction {
 		pterm.Info.Println("No user interaction mode enabled for processing files.")
 	}
 
@@ -160,7 +131,7 @@ func Run(args []string, opts *settings.Seetings) int {
 		targetDirBase = filesOrDirs[0]
 	}
 
-	states := convertFilesOrExit(files, *isDir, tools, *opts, targetDirBase)
+	states := convertFilesOrExit(files, *isDir, tools, *finalOpts, targetDirBase)
 	if states == nil {
 		app.WaitForAnyKey()
 		return ExitCodeConversionError
@@ -171,6 +142,61 @@ func Run(args []string, opts *settings.Seetings) int {
 	return ExitCodeSuccess
 }
 
+func printVersionInfo() {
+	fmt.Println("jpegli-windows-explorer-extension")
+	fmt.Printf("Version: %s, Build: %s, Commit: %s\n", Version, Build, Commit)
+}
+
+func shouldShowHelp(args []string) bool {
+	for _, arg := range args {
+		if arg == "--help" || arg == "-h" {
+			return true
+		}
+	}
+	return false
+}
+
+func showHelp() {
+	pterm.Println("Usage: jpegli-windows-explorer-extension [file1 file2 ... | directory]")
+	pterm.Println("Documentation: https://github.com/dhcgn/jpegli-windows-explorer-extension/blob/main/README.md")
+}
+
+func resolveSettings(opts *settings.Settings) (*settings.Settings, string, error) {
+	if opts != nil {
+		return opts, "provided", nil
+	}
+
+	if !settings.CheckForConfigFile() {
+		pterm.Warning.Println("No configuration file found, creating default configuration at " + settings.GetConfigFilePath())
+	}
+
+	loadedOpts, path, err := settings.LoadOrDefault()
+	if err != nil {
+		return nil, "", err
+	}
+	return &loadedOpts, path, nil
+}
+
+func checkForUpdates(opts *settings.Settings) {
+	if opts.SkipUpdateCheck {
+		pterm.Info.Println("Skipping update check as per configuration.")
+		return
+	}
+
+	pterm.Print("Checking for updates ... ")
+	latestRelease, err := update.GetLatestVersion("dhcgn/jpegli-windows-explorer-extension", Version, "^jpegli-windows-explorer-extension.exe$")
+	if err == update.ErrorNoNewVersionFound {
+		pterm.Info.Println("You are running the latest version.")
+	} else if err != nil {
+		pterm.Warning.Println("Failed to check for updates.")
+		pterm.Warning.Printfln("Error: %s", err)
+		pauseInConsole()
+	} else {
+		pterm.Printf("New Version: '%s' is available! You have '%s'\n", latestRelease.Version, Version)
+		pauseInConsole()
+	}
+}
+
 func handleInstallPrompt() {
 	pterm.Println("No arguments provided. Want to install and set context menu? --help for more info.")
 	result, _ := pterm.DefaultInteractiveConfirm.Show()
@@ -179,6 +205,13 @@ func handleInstallPrompt() {
 	if result {
 		install.Do()
 		pterm.Println("Installation completed.")
+
+		_, path, err := settings.LoadOrDefault()
+		if err != nil {
+			pterm.Warning.Printfln("Error creating default config: %s", err)
+		} else {
+			pterm.Info.Printfln("Configuration file created at: %s", path)
+		}
 	} else {
 		pterm.Println("You chose not to install.")
 	}
@@ -199,7 +232,7 @@ func getToolsOrExit() *types.ExecutablePaths {
 	return &tools
 }
 
-func showSettings(tools *types.ExecutablePaths, opts settings.Seetings, cfgPath string) {
+func showSettings(tools *types.ExecutablePaths, opts settings.Settings, cfgPath string) {
 	pterm.DefaultHeader.Println("Settings")
 	pterm.Info.Printfln("Config file:     %s", cfgPath)
 	pterm.Info.Printfln("Exiftool path:   %s", tools.Exiftool)
@@ -278,66 +311,77 @@ func checkIsDirOrExit(filesOrDirs []string) (*bool, error) {
 	return nil, fmt.Errorf("invalid combination: must be either a single directory or multiple files only")
 }
 
-func convertFilesOrExit(files []string, isDir bool, tools *types.ExecutablePaths, opts settings.Seetings, targetDirBase string) []convert.ConvertStats {
-	states := []convert.ConvertStats{}
+func convertFilesOrExit(files []string, isDir bool, tools *types.ExecutablePaths, opts settings.Settings, targetDirBase string) []convert.ConvertStats {
 	if !isDir {
-		for _, file := range files {
-			var targetPath string
+		return convertSingleFiles(files, tools, opts)
+	}
+	return convertDirectory(files, tools, opts, targetDirBase)
+}
 
-			ext := strings.ToLower(filepath.Ext(file))
-			isJpeg := ext == ".jpg" || ext == ".jpeg"
-			shouldOverride := opts.OverrideOriginalFile && isJpeg
+// convertSingleFiles processes a list of individual files.
+func convertSingleFiles(files []string, tools *types.ExecutablePaths, opts settings.Settings) []convert.ConvertStats {
+	states := []convert.ConvertStats{}
+	for _, file := range files {
+		var targetPath string
 
-			if shouldOverride {
-				// When overriding, use the source file as the target
-				targetPath = file
-			} else if opts.OverrideOriginalFile && !isJpeg {
-				// Different file type -> create a new file with extension jpg
-				targetPath = file + ".jpg"
-			} else {
-				// When not overriding, create a new file with .jpegli.jpg suffix
-				baseName := filepath.Base(file)
-				ext := filepath.Ext(baseName)
-				targetName := strings.TrimSuffix(baseName, ext) + ".jpegli.jpg"
-				targetPath = filepath.Join(filepath.Dir(file), targetName)
-			}
-			stat, err := convert.Convert(*tools, opts.Distance, shouldOverride, file, targetPath)
-			if err != nil {
-				pterm.Error.Printfln("Error converting file: %s", err)
-				return nil
-			}
+		ext := strings.ToLower(filepath.Ext(file))
+		isJpeg := ext == ".jpg" || ext == ".jpeg"
+		shouldOverride := opts.OverrideOriginalFile && isJpeg
+
+		if shouldOverride {
+			// When overriding, use the source file as the target
+			targetPath = file
+		} else if opts.OverrideOriginalFile && !isJpeg {
+			// Different file type -> create a new file with extension jpg
+			targetPath = file + ".jpg"
+		} else {
+			// When not overriding, create a new file with .jpegli.jpg suffix
+			baseName := filepath.Base(file)
+			ext := filepath.Ext(baseName)
+			targetName := strings.TrimSuffix(baseName, ext) + ".jpegli.jpg"
+			targetPath = filepath.Join(filepath.Dir(file), targetName)
+		}
+		stat, err := convert.Convert(*tools, opts.Distance, shouldOverride, file, targetPath)
+		if err != nil {
+			pterm.Error.Printfln("Error converting file: %s", err)
+			return nil
+		}
+		states = append(states, stat)
+		pterm.Info.Printfln("Converted file: %s with ratio %.2f", file, stat.FileSizeRatio)
+	}
+	return states
+}
+
+// convertDirectory processes all files in a directory, creating a new output directory.
+func convertDirectory(files []string, tools *types.ExecutablePaths, opts settings.Settings, targetDirBase string) []convert.ConvertStats {
+	states := []convert.ConvertStats{}
+	targetFolder := targetDirBase + "_jpegli-optimized"
+	err := os.MkdirAll(targetFolder, os.ModePerm)
+	if err != nil {
+		pterm.Error.Printfln("Error creating target folder: %s", err)
+		return nil
+	}
+	p, _ := pterm.DefaultProgressbar.WithTotal(len(files)).WithTitle("Converting files").Start()
+	for _, file := range files {
+		p.UpdateTitle(fmt.Sprintf("Converting %s", file))
+		baseName := filepath.Base(file)
+		ext := strings.ToLower(filepath.Ext(baseName))
+		if ext != ".jpg" && ext != ".jpeg" {
+			baseName = strings.TrimSuffix(baseName, ext) + ".jpg"
+		}
+		targetFilePath := targetFolder + string(os.PathSeparator) + baseName
+		stat, err := convert.Convert(*tools, opts.Distance, opts.OverrideOriginalFile, file, targetFilePath)
+		if err != nil {
+			pterm.Error.Printfln("Error converting file: %s", err)
+			return nil
+		} else {
 			states = append(states, stat)
 			pterm.Info.Printfln("Converted file: %s with ratio %.2f", file, stat.FileSizeRatio)
 		}
-	} else {
-		targetFolder := targetDirBase + "_jpegli-optimized"
-		err := os.MkdirAll(targetFolder, os.ModePerm)
-		if err != nil {
-			pterm.Error.Printfln("Error creating target folder: %s", err)
-			return nil
-		}
-		p, _ := pterm.DefaultProgressbar.WithTotal(len(files)).WithTitle("Converting files").Start()
-		for _, file := range files {
-			p.UpdateTitle(fmt.Sprintf("Converting %s", file))
-			baseName := filepath.Base(file)
-			ext := strings.ToLower(filepath.Ext(baseName))
-			if ext != ".jpg" && ext != ".jpeg" {
-				baseName = strings.TrimSuffix(baseName, ext) + ".jpg"
-			}
-			targetFilePath := targetFolder + string(os.PathSeparator) + baseName
-			stat, err := convert.Convert(*tools, opts.Distance, opts.OverrideOriginalFile, file, targetFilePath)
-			if err != nil {
-				pterm.Error.Printfln("Error converting file: %s", err)
-				return nil
-			} else {
-				states = append(states, stat)
-				pterm.Info.Printfln("Converted file: %s with ratio %.2f", file, stat.FileSizeRatio)
-			}
-			p.Increment()
-		}
-		p.Stop()
-		pterm.Info.Printfln("Converted %d files to %s", len(files), targetFolder)
+		p.Increment()
 	}
+	p.Stop()
+	pterm.Info.Printfln("Converted %d files to %s", len(files), targetFolder)
 	return states
 }
 
