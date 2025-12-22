@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	update "github.com/dhcgn/gh-update"
 	"github.com/dhcgn/jpegli-windows-explorer-extension/convert"
@@ -38,8 +39,18 @@ type App struct {
 	NoUserInteraction bool
 }
 
+// pauseInConsole simulates a pause in console by printing dots
+func pauseInConsole() {
+	for i := 0; i < 3; i++ {
+		fmt.Print(".")
+		time.Sleep(1 * time.Second)
+	}
+	fmt.Println()
+}
+
 func (a *App) WaitForAnyKey() {
 	if a.NoUserInteraction {
+		pauseInConsole()
 		return
 	}
 
@@ -98,8 +109,10 @@ func Run(args []string, opts *settings.Seetings) int {
 		} else if err != nil {
 			pterm.Warning.Println("Failed to check for updates.")
 			pterm.Warning.Printfln("Error: %s", err)
+			pauseInConsole()
 		} else {
 			pterm.Printf("New Version: '%s' is available! You have '%s'\n", lr.Version, Version)
+			pauseInConsole()
 		}
 	}
 

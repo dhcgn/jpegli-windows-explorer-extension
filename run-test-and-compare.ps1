@@ -1,5 +1,6 @@
 $inputFile = gci "test-files\DSC_4045-NEF_DxO_DeepPRIME.jpg"
-go run .\main.go $inputFile.FullName
+go build -o app.exe .\main.go 
+.\app.exe $inputFile.FullName
 
 <#
 

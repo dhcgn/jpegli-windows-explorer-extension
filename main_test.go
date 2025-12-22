@@ -58,7 +58,8 @@ func prepareTestFile(t *testing.T, originalFile string) (string, func()) {
 		t.Fatalf("Failed to read original file: %v", err)
 	}
 
-	tempFile, err := os.CreateTemp("test-files", "test-image-*.jpg")
+	ext := filepath.Ext(originalFile)
+	tempFile, err := os.CreateTemp("test-files", "test-image-*"+ext)
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
@@ -166,5 +167,40 @@ func TestRun_ConvertFile_Override(t *testing.T) {
 	// Check that no .jpegli.jpg file was created
 	if _, err := os.Stat(unexpectedOutputFile); !os.IsNotExist(err) {
 		t.Errorf("Expected no .jpegli.jpg file to be created, but found %s", unexpectedOutputFile)
+	}
+}
+
+func TestRun_ConvertFile_Override_Different_File_Type(t *testing.T) {
+	originalFile := filepath.Join("test-files", "Untitled.png")
+	testFile, cleanup := prepareTestFile(t, originalFile)
+	defer cleanup()
+
+	// Calculate expected output filename
+	// We expect the original filename + .jpg appended, because the extension is different
+	expectedOutputFile := testFile + ".jpg"
+
+	// Ensure expected file doesn't exist before run
+	os.Remove(expectedOutputFile)
+	defer os.Remove(expectedOutputFile)
+
+	args := []string{"app", testFile}
+
+	opts := defaultTestingSettings()
+	opts.OverrideOriginalFile = true
+
+	exitCode := Run(args, opts)
+
+	if exitCode != ExitCodeSuccess {
+		t.Errorf("Expected exit code %d, got %d", ExitCodeSuccess, exitCode)
+	}
+
+	// Check if output file was created
+	if _, err := os.Stat(expectedOutputFile); os.IsNotExist(err) {
+		t.Errorf("Expected output file %s to be created", expectedOutputFile)
+	}
+
+	// Check if original file still exists
+	if _, err := os.Stat(testFile); os.IsNotExist(err) {
+		t.Errorf("Expected original file %s to exist", testFile)
 	}
 }
