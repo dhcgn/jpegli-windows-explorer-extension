@@ -58,7 +58,8 @@ func prepareTestFile(t *testing.T, originalFile string) (string, func()) {
 		t.Fatalf("Failed to read original file: %v", err)
 	}
 
-	tempFile, err := os.CreateTemp("test-files", "test-image-*.jpg")
+	ext := filepath.Ext(originalFile)
+	tempFile, err := os.CreateTemp("test-files", "test-image-*"+ext)
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
@@ -166,5 +167,113 @@ func TestRun_ConvertFile_Override(t *testing.T) {
 	// Check that no .jpegli.jpg file was created
 	if _, err := os.Stat(unexpectedOutputFile); !os.IsNotExist(err) {
 		t.Errorf("Expected no .jpegli.jpg file to be created, but found %s", unexpectedOutputFile)
+	}
+}
+
+func TestRun_ConvertFile_Override_Different_File_Type(t *testing.T) {
+	originalFile := filepath.Join("test-files", "Untitled.png")
+	testFile, cleanup := prepareTestFile(t, originalFile)
+	defer cleanup()
+
+	// Calculate expected output filename
+	// We expect the original filename + .jpg appended, because the extension is different
+	expectedOutputFile := testFile + ".jpg"
+
+	// Ensure expected file doesn't exist before run
+	os.Remove(expectedOutputFile)
+	defer os.Remove(expectedOutputFile)
+
+	args := []string{"app", testFile}
+
+	opts := defaultTestingSettings()
+	opts.OverrideOriginalFile = true
+
+	exitCode := Run(args, opts)
+
+	if exitCode != ExitCodeSuccess {
+		t.Errorf("Expected exit code %d, got %d", ExitCodeSuccess, exitCode)
+	}
+
+	// Check if output file was created
+	if _, err := os.Stat(expectedOutputFile); os.IsNotExist(err) {
+		t.Errorf("Expected output file %s to be created", expectedOutputFile)
+	}
+
+	// Check if original file still exists
+	if _, err := os.Stat(testFile); os.IsNotExist(err) {
+		t.Errorf("Expected original file %s to exist", testFile)
+	}
+}
+
+func prepareTestFolder(t *testing.T, files []string) (string, func()) {
+	tempDir, err := os.MkdirTemp("test-files", "test-folder-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+
+	for _, file := range files {
+		content, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatalf("Failed to read file %s: %v", file, err)
+		}
+		baseName := filepath.Base(file)
+		if err := os.WriteFile(filepath.Join(tempDir, baseName), content, 0644); err != nil {
+			t.Fatalf("Failed to write file %s: %v", baseName, err)
+		}
+	}
+
+	return tempDir, func() {
+		os.RemoveAll(tempDir)
+	}
+}
+
+func TestRun_ConvertFolder(t *testing.T) {
+	files := []string{
+		filepath.Join("test-files", "DSC_4045-NEF_DxO_DeepPRIME.jpg"),
+		filepath.Join("test-files", "Untitled.png"),
+	}
+	testDir, cleanup := prepareTestFolder(t, files)
+	defer cleanup()
+
+	// Calculate expected output folder
+	expectedOutputFolder := testDir + "_jpegli-optimized"
+	defer os.RemoveAll(expectedOutputFolder)
+
+	args := []string{"app", testDir}
+
+	exitCode := Run(args, defaultTestingSettings())
+
+	if exitCode != ExitCodeSuccess {
+		t.Errorf("Expected exit code %d, got %d", ExitCodeSuccess, exitCode)
+	}
+
+	if _, err := os.Stat(expectedOutputFolder); os.IsNotExist(err) {
+		t.Errorf("Expected output folder %s to be created", expectedOutputFolder)
+	}
+
+	// Check DSC_4045-NEF_DxO_DeepPRIME.jpg
+	jpgFile := filepath.Join(expectedOutputFolder, "DSC_4045-NEF_DxO_DeepPRIME.jpg")
+	if _, err := os.Stat(jpgFile); os.IsNotExist(err) {
+		t.Errorf("Expected output file %s to be created", jpgFile)
+	} else {
+		// Check if new file is smaller
+		inputStat, err := os.Stat(files[0])
+		if err != nil {
+			t.Fatalf("Failed to stat input file: %v", err)
+		}
+		outputStat, err := os.Stat(jpgFile)
+		if err != nil {
+			t.Fatalf("Failed to stat output file: %v", err)
+		}
+
+		if outputStat.Size() >= inputStat.Size() {
+			t.Errorf("Expected output file to be smaller than input file. Input: %d, Output: %d", inputStat.Size(), outputStat.Size())
+		}
+	}
+
+	// Check Untitled.jpg (converted from png)
+	pngConvertedFile := filepath.Join(expectedOutputFolder, "Untitled.jpg")
+	if _, err := os.Stat(pngConvertedFile); os.IsNotExist(err) {
+		t.Errorf("Expected output file %s to be created", pngConvertedFile)
 	}
 }

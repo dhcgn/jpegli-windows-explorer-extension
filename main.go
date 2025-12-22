@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	update "github.com/dhcgn/gh-update"
 	"github.com/dhcgn/jpegli-windows-explorer-extension/convert"
@@ -38,8 +39,18 @@ type App struct {
 	NoUserInteraction bool
 }
 
+// pauseInConsole simulates a pause in console by printing dots
+func pauseInConsole() {
+	for i := 0; i < 3; i++ {
+		fmt.Print(".")
+		time.Sleep(1 * time.Second)
+	}
+	fmt.Println()
+}
+
 func (a *App) WaitForAnyKey() {
 	if a.NoUserInteraction {
+		pauseInConsole()
 		return
 	}
 
@@ -98,8 +109,10 @@ func Run(args []string, opts *settings.Seetings) int {
 		} else if err != nil {
 			pterm.Warning.Println("Failed to check for updates.")
 			pterm.Warning.Printfln("Error: %s", err)
+			pauseInConsole()
 		} else {
 			pterm.Printf("New Version: '%s' is available! You have '%s'\n", lr.Version, Version)
+			pauseInConsole()
 		}
 	}
 
@@ -270,9 +283,17 @@ func convertFilesOrExit(files []string, isDir bool, tools *types.ExecutablePaths
 	if !isDir {
 		for _, file := range files {
 			var targetPath string
-			if opts.OverrideOriginalFile {
+
+			ext := strings.ToLower(filepath.Ext(file))
+			isJpeg := ext == ".jpg" || ext == ".jpeg"
+			shouldOverride := opts.OverrideOriginalFile && isJpeg
+
+			if shouldOverride {
 				// When overriding, use the source file as the target
 				targetPath = file
+			} else if opts.OverrideOriginalFile && !isJpeg {
+				// Different file type -> create a new file with extension jpg
+				targetPath = file + ".jpg"
 			} else {
 				// When not overriding, create a new file with .jpegli.jpg suffix
 				baseName := filepath.Base(file)
@@ -280,7 +301,7 @@ func convertFilesOrExit(files []string, isDir bool, tools *types.ExecutablePaths
 				targetName := strings.TrimSuffix(baseName, ext) + ".jpegli.jpg"
 				targetPath = filepath.Join(filepath.Dir(file), targetName)
 			}
-			stat, err := convert.Convert(*tools, opts.Distance, opts.OverrideOriginalFile, file, targetPath)
+			stat, err := convert.Convert(*tools, opts.Distance, shouldOverride, file, targetPath)
 			if err != nil {
 				pterm.Error.Printfln("Error converting file: %s", err)
 				return nil
