@@ -158,7 +158,11 @@ func MarkAsOptimized(tools types.ExecutablePaths, targetPath, markerValue string
 }
 
 func withExiftoolConfig(tools types.ExecutablePaths, args ...string) []string {
-	withConfig := make([]string, 0, len(args)+2)
+	capacity := len(args)
+	if tools.ExiftoolConfig != "" {
+		capacity += 2
+	}
+	withConfig := make([]string, 0, capacity)
 	if tools.ExiftoolConfig != "" {
 		withConfig = append(withConfig, "-config", tools.ExiftoolConfig)
 	}

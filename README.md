@@ -76,8 +76,8 @@ This CLI application provides a simple way to optimize JPEG files or entire fold
    - You can run the app from the command line, passing a file or folder as an argument to optimize JPEGs.
 
 3. **Optimization Settings**
-    - Uses a default distance (quality) setting for jpegli, which can be adjusted in the config file.
-    - Preserves metadata using exiftool.
+   - Uses a default distance (quality) setting for jpegli, which can be adjusted in the config file.
+   - Preserves metadata using exiftool.
    - Marks successfully processed files with `XMP-jpegli:OptimizedBy=jpegli-windows-explorer-extension <version>`.
    - Skips files that already have this marker by default.
 

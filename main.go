@@ -331,7 +331,7 @@ func convertSingleFiles(files []string, tools *types.ExecutablePaths, opts setti
 			pterm.Warning.Printfln("Could not read processed marker for file %s, continuing conversion: %s", file, err)
 		}
 		if skip {
-			pterm.Info.Printfln("Skipped already processed file: %s (%s=%s)", file, convert.OptimizedByTag, optimizedBy)
+			pterm.Info.Printfln("Skipped already processed file: %s (processed by: %s)", file, optimizedBy)
 			skippedCount++
 			continue
 		}
@@ -387,7 +387,7 @@ func convertDirectory(files []string, tools *types.ExecutablePaths, opts setting
 			pterm.Warning.Printfln("Could not read processed marker for file %s, continuing conversion: %s", file, err)
 		}
 		if skip {
-			pterm.Info.Printfln("Skipped already processed file: %s (%s=%s)", file, convert.OptimizedByTag, optimizedBy)
+			pterm.Info.Printfln("Skipped already processed file: %s (processed by: %s)", file, optimizedBy)
 			skippedCount++
 			p.Increment()
 			continue
@@ -431,13 +431,10 @@ func shouldSkipFile(file string, tools *types.ExecutablePaths, opts settings.Set
 	if err != nil {
 		return false, "", err
 	}
-	return shouldSkipAlreadyProcessed(opts.AlwaysReprocessFiles, optimizedBy), optimizedBy, nil
+	return shouldSkipAlreadyProcessed(optimizedBy), optimizedBy, nil
 }
 
-func shouldSkipAlreadyProcessed(alwaysReprocessFiles bool, optimizedBy string) bool {
-	if alwaysReprocessFiles {
-		return false
-	}
+func shouldSkipAlreadyProcessed(optimizedBy string) bool {
 	return strings.TrimSpace(optimizedBy) != ""
 }
 

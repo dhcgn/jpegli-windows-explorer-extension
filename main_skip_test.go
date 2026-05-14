@@ -4,42 +4,32 @@ import "testing"
 
 func TestShouldSkipAlreadyProcessed(t *testing.T) {
 	tests := []struct {
-		name                 string
-		alwaysReprocessFiles bool
-		optimizedBy          string
-		want                 bool
+		name        string
+		optimizedBy string
+		want        bool
 	}{
 		{
-			name:                 "skip when marker exists and always reprocess disabled",
-			alwaysReprocessFiles: false,
-			optimizedBy:          "jpegli-windows-explorer-extension 1.0.0",
-			want:                 true,
+			name:        "skip when marker exists",
+			optimizedBy: "jpegli-windows-explorer-extension 1.0.0",
+			want:        true,
 		},
 		{
-			name:                 "do not skip when marker is empty",
-			alwaysReprocessFiles: false,
-			optimizedBy:          "",
-			want:                 false,
+			name:        "do not skip when marker is empty",
+			optimizedBy: "",
+			want:        false,
 		},
 		{
-			name:                 "do not skip when marker is whitespace only",
-			alwaysReprocessFiles: false,
-			optimizedBy:          "   ",
-			want:                 false,
-		},
-		{
-			name:                 "do not skip when always reprocess enabled",
-			alwaysReprocessFiles: true,
-			optimizedBy:          "jpegli-windows-explorer-extension 1.0.0",
-			want:                 false,
+			name:        "do not skip when marker is whitespace only",
+			optimizedBy: "   ",
+			want:        false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := shouldSkipAlreadyProcessed(tt.alwaysReprocessFiles, tt.optimizedBy)
+			got := shouldSkipAlreadyProcessed(tt.optimizedBy)
 			if got != tt.want {
-				t.Fatalf("shouldSkipAlreadyProcessed(%v, %q) = %v, want %v", tt.alwaysReprocessFiles, tt.optimizedBy, got, tt.want)
+				t.Fatalf("shouldSkipAlreadyProcessed(%q) = %v, want %v", tt.optimizedBy, got, tt.want)
 			}
 		})
 	}
