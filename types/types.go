@@ -1,6 +1,7 @@
 package types
 
 type ExecutablePaths struct {
-	Exiftool string
-	Cjpegli  string
+	Exiftool       string
+	ExiftoolConfig string
+	Cjpegli        string
 }

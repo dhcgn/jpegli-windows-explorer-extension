@@ -15,6 +15,7 @@ const configFileName = "config.yaml"
 type Settings struct {
 	Distance             float64 `yaml:"distance"`
 	OverrideOriginalFile bool    `yaml:"override_original_file"`
+	AlwaysReprocessFiles bool    `yaml:"always_reprocess_files"`
 	SkipUpdateCheck      bool    `yaml:"skip_update_check"`
 	NoUserInteraction    bool    `yaml:"no_user_interaction"`
 }
@@ -55,7 +56,7 @@ func LoadOrDefault() (Settings, string, error) {
 }
 
 func loadOrDefault(cfgPath string) (Settings, string, error) {
-	defaultOpts := Settings{Distance: 0.5, OverrideOriginalFile: false, SkipUpdateCheck: false, NoUserInteraction: false}
+	defaultOpts := Settings{Distance: 0.5, OverrideOriginalFile: false, AlwaysReprocessFiles: false, SkipUpdateCheck: false, NoUserInteraction: false}
 
 	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
 		saveDefaultConfig(cfgPath, defaultOpts)

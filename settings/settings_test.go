@@ -10,7 +10,7 @@ import (
 
 func TestSettingsDefaultValues(t *testing.T) {
 	// Create a default Settings instance
-	defaultOpts := Settings{Distance: 0.5, OverrideOriginalFile: false}
+	defaultOpts := Settings{Distance: 0.5, OverrideOriginalFile: false, AlwaysReprocessFiles: false}
 
 	// Check default values
 	if defaultOpts.Distance != 0.5 {
@@ -19,11 +19,14 @@ func TestSettingsDefaultValues(t *testing.T) {
 	if defaultOpts.OverrideOriginalFile != false {
 		t.Errorf("Expected OverrideOriginalFile to be false, got %v", defaultOpts.OverrideOriginalFile)
 	}
+	if defaultOpts.AlwaysReprocessFiles != false {
+		t.Errorf("Expected AlwaysReprocessFiles to be false, got %v", defaultOpts.AlwaysReprocessFiles)
+	}
 }
 
 func TestSettingsYAMLSerialization(t *testing.T) {
 	// Test YAML marshaling
-	opts := Settings{Distance: 1.5, OverrideOriginalFile: true}
+	opts := Settings{Distance: 1.5, OverrideOriginalFile: true, AlwaysReprocessFiles: true}
 	data, err := yaml.Marshal(opts)
 	if err != nil {
 		t.Fatalf("Failed to marshal Settings: %v", err)
@@ -43,6 +46,9 @@ func TestSettingsYAMLSerialization(t *testing.T) {
 	if unmarshaled.OverrideOriginalFile != opts.OverrideOriginalFile {
 		t.Errorf("Expected OverrideOriginalFile to be %v, got %v", opts.OverrideOriginalFile, unmarshaled.OverrideOriginalFile)
 	}
+	if unmarshaled.AlwaysReprocessFiles != opts.AlwaysReprocessFiles {
+		t.Errorf("Expected AlwaysReprocessFiles to be %v, got %v", opts.AlwaysReprocessFiles, unmarshaled.AlwaysReprocessFiles)
+	}
 }
 
 func TestSaveAndLoadConfig(t *testing.T) {
@@ -54,7 +60,7 @@ func TestSaveAndLoadConfig(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	// Create test config
-	testConfig := Settings{Distance: 2.5, OverrideOriginalFile: true}
+	testConfig := Settings{Distance: 2.5, OverrideOriginalFile: true, AlwaysReprocessFiles: true}
 	configPath := filepath.Join(tempDir, "config.yaml")
 
 	// Marshal and save
@@ -84,5 +90,8 @@ func TestSaveAndLoadConfig(t *testing.T) {
 	}
 	if loaded.OverrideOriginalFile != testConfig.OverrideOriginalFile {
 		t.Errorf("Expected OverrideOriginalFile to be %v, got %v", testConfig.OverrideOriginalFile, loaded.OverrideOriginalFile)
+	}
+	if loaded.AlwaysReprocessFiles != testConfig.AlwaysReprocessFiles {
+		t.Errorf("Expected AlwaysReprocessFiles to be %v, got %v", testConfig.AlwaysReprocessFiles, loaded.AlwaysReprocessFiles)
 	}
 }

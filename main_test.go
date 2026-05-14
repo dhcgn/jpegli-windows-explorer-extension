@@ -31,6 +31,7 @@ func defaultTestingSettings() *settings.Settings {
 		// Default values
 		Distance:             0.5,
 		OverrideOriginalFile: false,
+		AlwaysReprocessFiles: false,
 
 		// Because this is for testing, set these to true
 		SkipUpdateCheck:   true,

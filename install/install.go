@@ -16,7 +16,11 @@ import (
 var (
 	//go:embed files/*
 	files embed.FS
+	//go:embed exiftool-jpegli.config
+	exiftoolConfig []byte
 )
+
+const exiftoolConfigFileName = "exiftool-jpegli.config"
 
 func Do() error {
 
@@ -76,8 +80,9 @@ func GetAppFolder() string {
 func GetToolsPath() (types.ExecutablePaths, error) {
 	// Initialize empty paths
 	execPaths := types.ExecutablePaths{
-		Exiftool: "",
-		Cjpegli:  "",
+		Exiftool:       "",
+		ExiftoolConfig: "",
+		Cjpegli:        "",
 	}
 
 	// Get the application folder
@@ -90,6 +95,11 @@ func GetToolsPath() (types.ExecutablePaths, error) {
 	// Find the executables in the application folder
 	execPaths.Exiftool = findExifTool(appFolder)
 	execPaths.Cjpegli = findCjpegli(appFolder)
+	execPaths.ExiftoolConfig = filepath.Join(appFolder, exiftoolConfigFileName)
+
+	if err := writeExiftoolConfig(execPaths.ExiftoolConfig); err != nil {
+		return execPaths, fmt.Errorf("failed to write exiftool config: %w", err)
+	}
 
 	if execPaths.Exiftool == "" {
 		fmt.Println("Error: exiftool executable not found")
@@ -108,8 +118,9 @@ func GetToolsPath() (types.ExecutablePaths, error) {
 func ExtractEmbeddedZipFilesToAppFolder() (types.ExecutablePaths, error) {
 	// Initialize empty paths
 	execPaths := types.ExecutablePaths{
-		Exiftool: "",
-		Cjpegli:  "",
+		Exiftool:       "",
+		ExiftoolConfig: "",
+		Cjpegli:        "",
 	}
 
 	// Get the application folder
@@ -118,12 +129,17 @@ func ExtractEmbeddedZipFilesToAppFolder() (types.ExecutablePaths, error) {
 		fmt.Println("Failed to get application folder")
 		return execPaths, fmt.Errorf("failed to get application folder")
 	}
+	execPaths.ExiftoolConfig = filepath.Join(appFolder, exiftoolConfigFileName)
 
 	// Ensure the app folder exists
 	err := os.MkdirAll(appFolder, 0755)
 	if err != nil {
 		fmt.Printf("Error creating application folder %s: %v\n", appFolder, err)
 		return execPaths, fmt.Errorf("error creating application folder: %w", err)
+	}
+
+	if err := writeExiftoolConfig(execPaths.ExiftoolConfig); err != nil {
+		return execPaths, fmt.Errorf("failed to write exiftool config: %w", err)
 	}
 
 	// Read the embedded files directory
@@ -197,6 +213,13 @@ func ExtractEmbeddedZipFilesToAppFolder() (types.ExecutablePaths, error) {
 	}
 
 	return execPaths, nil
+}
+
+func writeExiftoolConfig(configPath string) error {
+	if err := os.WriteFile(configPath, exiftoolConfig, 0644); err != nil {
+		return fmt.Errorf("error writing exiftool config %s: %w", configPath, err)
+	}
+	return nil
 }
 
 // extractZipFile extracts the contents of a zip file to the specified destination directory

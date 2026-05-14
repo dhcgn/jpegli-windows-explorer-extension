@@ -60,6 +60,7 @@ This allows you to seamlessly optimize your JPEGs as part of your regular Lightr
 For a more seamless experience with Lightroom, you can adjust the following options in the `config.yaml`:
 - `no_user_interaction`: Set to `true` to prevent the window from waiting for user input.
 - `override_original_file`: Set to `true` to replace the original files directly.
+- `always_reprocess_files`: Set to `true` to reprocess files even if they were already processed before.
 
 ## Purpose
 
@@ -77,6 +78,8 @@ This CLI application provides a simple way to optimize JPEG files or entire fold
 3. **Optimization Settings**
    - Uses a default distance (quality) setting for jpegli, which can be adjusted in the config file.
    - Preserves metadata using exiftool.
+   - Marks successfully processed files with `XMP-jpegli:OptimizedBy=jpegli-windows-explorer-extension <version>`.
+   - Skips files that already have this marker by default.
 
 4. **Embedded Tools**
    - Both jpegli.exe and exiftool.exe are embedded within the application and extracted as needed. No manual download is required.
@@ -134,6 +137,7 @@ The default settings are set to ensure high quality!
 ```yaml
 distance: 0.5
 override_original_file: false
+always_reprocess_files: false
 skip_update_check: false
 no_user_interaction: false
 ```
@@ -142,8 +146,16 @@ no_user_interaction: false
 
 - `distance`: Controls the jpegli quality setting. Lower values mean higher quality (recommended range: 0.5–3.0, where 1.0 is visually lossless). Default: `0.5`
 - `override_original_file`: When set to `true`, the original file will be replaced with the optimized version. The replacement only occurs if both `cjpegli` and `exiftool` run successfully. When set to `false` (default), a new file with `.jpegli.jpg` suffix is created instead. Default: `false`
+- `always_reprocess_files`: When set to `false` (default), files already marked with `XMP-jpegli:OptimizedBy` are skipped. When set to `true`, files are always reprocessed even if the marker exists. Default: `false`
 - `skip_update_check`: When set to `true`, the application will not check for updates on startup. Default: `false`
 - `no_user_interaction`: When set to `true`, the application will not wait for user input (e.g. "Press any key to continue") before exiting. This is useful for automated workflows. Default: `false`
+
+### Processed-file marker behavior
+
+- After a successful conversion (including metadata handling), the app writes `XMP-jpegli:OptimizedBy`.
+- Marker value format: `jpegli-windows-explorer-extension <version>`.
+- By default, files with this marker are skipped to avoid duplicate processing.
+- If `override_original_file: true`, the marker is written to the replaced file, and future runs still detect and skip it unless `always_reprocess_files: true`.
 
 You can edit this file to adjust the optimization settings to your preference.
 

@@ -1,4 +1,5 @@
 distance: 0.5
 override_original_file: false
+always_reprocess_files: false
 skip_update_check: false
 no_user_interaction: false
