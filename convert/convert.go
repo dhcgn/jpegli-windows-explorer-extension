@@ -130,7 +130,8 @@ func ReadOptimizedBy(tools types.ExecutablePaths, sourcePath string) (string, er
 		return "", fmt.Errorf("exiftool config path is empty")
 	}
 
-	args := withExiftoolConfig(tools, "-s3", "-"+OptimizedByTag, sourcePath)
+	// -q -q for quiet mode to suppress warnings
+	args := withExiftoolConfig(tools, "-s3", "-q", "-q", "-"+OptimizedByTag, sourcePath)
 	cmd := exec.Command(tools.Exiftool, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
