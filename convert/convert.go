@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/dhcgn/jpegli-windows-explorer-extension/types"
 )
@@ -16,7 +17,9 @@ type ConvertStats struct {
 	SavedSize     int64
 }
 
-func Convert(tools types.ExecutablePaths, distance float64, overrideOriginal bool, sourcePath, targetPath string) (ConvertStats, error) {
+const OptimizedByTag = "XMP-jpegli:OptimizedBy"
+
+func Convert(tools types.ExecutablePaths, distance float64, overrideOriginal bool, sourcePath, targetPath, markerValue string) (ConvertStats, error) {
 	// Validate tools paths
 	if tools.Cjpegli == "" {
 		return ConvertStats{}, fmt.Errorf("cjpegli path is empty")
@@ -72,7 +75,8 @@ func Convert(tools types.ExecutablePaths, distance float64, overrideOriginal boo
 	}
 
 	// Step 2: Copy metadata from source to target using ExifTool
-	cmd = exec.Command(tools.Exiftool, "-overwrite_original", "-TagsFromFile", sourcePath, actualTargetPath)
+	copyMetadataArgs := withExiftoolConfig(tools, "-overwrite_original", "-TagsFromFile", sourcePath, actualTargetPath)
+	cmd = exec.Command(tools.Exiftool, copyMetadataArgs...)
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		// Clean up temporary file if it exists
@@ -94,7 +98,13 @@ func Convert(tools types.ExecutablePaths, distance float64, overrideOriginal boo
 		actualTargetPath = sourcePath
 	}
 
-	// Step 4: Get file sizes and calculate statistics
+	// Step 4: Mark target file as optimized only after conversion and metadata copy succeeded.
+	markerErr := MarkAsOptimized(tools, actualTargetPath, markerValue)
+	if markerErr != nil {
+		return ConvertStats{}, markerErr
+	}
+
+	// Step 5: Get file sizes and calculate statistics
 	targetInfo, err := os.Stat(actualTargetPath)
 	if err != nil {
 		return ConvertStats{}, fmt.Errorf("error getting target file info: %w", err)
@@ -110,4 +120,48 @@ func Convert(tools types.ExecutablePaths, distance float64, overrideOriginal boo
 		TargetSize:    targetSize,
 		SavedSize:     sourceSize - targetSize,
 	}, nil
+}
+
+func ReadOptimizedBy(tools types.ExecutablePaths, sourcePath string) (string, error) {
+	if tools.Exiftool == "" {
+		return "", fmt.Errorf("exiftool path is empty")
+	}
+	if tools.ExiftoolConfig == "" {
+		return "", fmt.Errorf("exiftool config path is empty")
+	}
+
+	args := withExiftoolConfig(tools, "-s3", "-"+OptimizedByTag, sourcePath)
+	cmd := exec.Command(tools.Exiftool, args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("exiftool read marker failed: %w\nOutput: %s", err, output)
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+func MarkAsOptimized(tools types.ExecutablePaths, targetPath, markerValue string) error {
+	if tools.Exiftool == "" {
+		return fmt.Errorf("exiftool path is empty")
+	}
+	if tools.ExiftoolConfig == "" {
+		return fmt.Errorf("exiftool config path is empty")
+	}
+
+	tagAssignment := fmt.Sprintf("-%s=%s", OptimizedByTag, markerValue)
+	args := withExiftoolConfig(tools, "-overwrite_original", tagAssignment, targetPath)
+	cmd := exec.Command(tools.Exiftool, args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("exiftool write marker failed: %w\nOutput: %s", err, output)
+	}
+	return nil
+}
+
+func withExiftoolConfig(tools types.ExecutablePaths, args ...string) []string {
+	withConfig := make([]string, 0, len(args)+2)
+	if tools.ExiftoolConfig != "" {
+		withConfig = append(withConfig, "-config", tools.ExiftoolConfig)
+	}
+	withConfig = append(withConfig, args...)
+	return withConfig
 }

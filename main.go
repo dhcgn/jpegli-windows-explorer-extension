@@ -236,9 +236,11 @@ func showSettings(tools *types.ExecutablePaths, opts settings.Settings, cfgPath 
 	pterm.DefaultHeader.Println("Settings")
 	pterm.Info.Printfln("Config file:     %s", cfgPath)
 	pterm.Info.Printfln("Exiftool path:   %s", tools.Exiftool)
+	pterm.Info.Printfln("Exiftool config: %s", tools.ExiftoolConfig)
 	pterm.Info.Printfln("cjpegli path:    %s", tools.Cjpegli)
 	pterm.Info.Printfln("Jpegli Distance: %.2f (recommended 0.5-3.0, 1.0 = visually lossless, lower better)", opts.Distance)
 	pterm.Info.Printfln("Override Original: %v", opts.OverrideOriginalFile)
+	pterm.Info.Printfln("Always Reprocess Files: %v", opts.AlwaysReprocessFiles)
 	pterm.DefaultHeader.Println("Converting")
 }
 
@@ -321,7 +323,19 @@ func convertFilesOrExit(files []string, isDir bool, tools *types.ExecutablePaths
 // convertSingleFiles processes a list of individual files.
 func convertSingleFiles(files []string, tools *types.ExecutablePaths, opts settings.Settings) []convert.ConvertStats {
 	states := []convert.ConvertStats{}
+	skippedCount := 0
+	markerValue := optimizedByValue()
 	for _, file := range files {
+		skip, optimizedBy, err := shouldSkipFile(file, tools, opts)
+		if err != nil {
+			pterm.Warning.Printfln("Could not read processed marker for file %s, continuing conversion: %s", file, err)
+		}
+		if skip {
+			pterm.Info.Printfln("Skipped already processed file: %s (%s=%s)", file, convert.OptimizedByTag, optimizedBy)
+			skippedCount++
+			continue
+		}
+
 		var targetPath string
 
 		ext := strings.ToLower(filepath.Ext(file))
@@ -341,7 +355,7 @@ func convertSingleFiles(files []string, tools *types.ExecutablePaths, opts setti
 			targetName := strings.TrimSuffix(baseName, ext) + ".jpegli.jpg"
 			targetPath = filepath.Join(filepath.Dir(file), targetName)
 		}
-		stat, err := convert.Convert(*tools, opts.Distance, shouldOverride, file, targetPath)
+		stat, err := convert.Convert(*tools, opts.Distance, shouldOverride, file, targetPath, markerValue)
 		if err != nil {
 			pterm.Error.Printfln("Error converting file: %s", err)
 			return nil
@@ -349,12 +363,17 @@ func convertSingleFiles(files []string, tools *types.ExecutablePaths, opts setti
 		states = append(states, stat)
 		pterm.Info.Printfln("Converted file: %s with ratio %.2f", file, stat.FileSizeRatio)
 	}
+	if skippedCount > 0 {
+		pterm.Info.Printfln("Skipped %d already processed file(s).", skippedCount)
+	}
 	return states
 }
 
 // convertDirectory processes all files in a directory, creating a new output directory.
 func convertDirectory(files []string, tools *types.ExecutablePaths, opts settings.Settings, targetDirBase string) []convert.ConvertStats {
 	states := []convert.ConvertStats{}
+	skippedCount := 0
+	markerValue := optimizedByValue()
 	targetFolder := targetDirBase + "_jpegli-optimized"
 	err := os.MkdirAll(targetFolder, os.ModePerm)
 	if err != nil {
@@ -363,6 +382,17 @@ func convertDirectory(files []string, tools *types.ExecutablePaths, opts setting
 	}
 	p, _ := pterm.DefaultProgressbar.WithTotal(len(files)).WithTitle("Converting files").Start()
 	for _, file := range files {
+		skip, optimizedBy, err := shouldSkipFile(file, tools, opts)
+		if err != nil {
+			pterm.Warning.Printfln("Could not read processed marker for file %s, continuing conversion: %s", file, err)
+		}
+		if skip {
+			pterm.Info.Printfln("Skipped already processed file: %s (%s=%s)", file, convert.OptimizedByTag, optimizedBy)
+			skippedCount++
+			p.Increment()
+			continue
+		}
+
 		p.UpdateTitle(fmt.Sprintf("Converting %s", file))
 		baseName := filepath.Base(file)
 		ext := strings.ToLower(filepath.Ext(baseName))
@@ -370,7 +400,7 @@ func convertDirectory(files []string, tools *types.ExecutablePaths, opts setting
 			baseName = strings.TrimSuffix(baseName, ext) + ".jpg"
 		}
 		targetFilePath := targetFolder + string(os.PathSeparator) + baseName
-		stat, err := convert.Convert(*tools, opts.Distance, opts.OverrideOriginalFile, file, targetFilePath)
+		stat, err := convert.Convert(*tools, opts.Distance, opts.OverrideOriginalFile, file, targetFilePath, markerValue)
 		if err != nil {
 			pterm.Error.Printfln("Error converting file: %s", err)
 			return nil
@@ -381,12 +411,42 @@ func convertDirectory(files []string, tools *types.ExecutablePaths, opts setting
 		p.Increment()
 	}
 	p.Stop()
-	pterm.Info.Printfln("Converted %d files to %s", len(files), targetFolder)
+	pterm.Info.Printfln("Converted %d file(s) to %s", len(states), targetFolder)
+	if skippedCount > 0 {
+		pterm.Info.Printfln("Skipped %d already processed file(s).", skippedCount)
+	}
 	return states
+}
+
+func optimizedByValue() string {
+	return fmt.Sprintf("%s %s", AppName, Version)
+}
+
+func shouldSkipFile(file string, tools *types.ExecutablePaths, opts settings.Settings) (bool, string, error) {
+	if opts.AlwaysReprocessFiles {
+		return false, "", nil
+	}
+
+	optimizedBy, err := convert.ReadOptimizedBy(*tools, file)
+	if err != nil {
+		return false, "", err
+	}
+	return shouldSkipAlreadyProcessed(opts.AlwaysReprocessFiles, optimizedBy), optimizedBy, nil
+}
+
+func shouldSkipAlreadyProcessed(alwaysReprocessFiles bool, optimizedBy string) bool {
+	if alwaysReprocessFiles {
+		return false
+	}
+	return strings.TrimSpace(optimizedBy) != ""
 }
 
 func printStats(states []convert.ConvertStats) {
 	pterm.DefaultHeader.Println("Finished")
+	if len(states) == 0 {
+		pterm.Info.Printfln("No files were converted.")
+		return
+	}
 	var totalSourceSize int64
 	var totalTargetSize int64
 	for _, stat := range states {
